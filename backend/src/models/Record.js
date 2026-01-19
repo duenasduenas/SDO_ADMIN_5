@@ -1,0 +1,31 @@
+import mongoose from "mongoose";
+
+const recordSchema = new mongoose.Schema({
+    content: {type: String, required: true},
+    title: {type: String, required: true},
+    createdAt: {type: Date, default: Date.now, immutable: true},
+
+    dateInfo: {
+        year: Number,
+        month: Number,
+        monthName: String,
+        week: Number,
+        day: Number,
+        dayOfWeek: Number,
+        dayName: String,
+        fullDate: String
+    },
+
+    folder: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Folder",
+        required: true,
+        default: null
+    }]
+
+})
+
+
+
+const Record = mongoose.model("Record", recordSchema);
+export default Record;
