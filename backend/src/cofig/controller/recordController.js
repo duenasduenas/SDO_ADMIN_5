@@ -46,6 +46,19 @@ export async function createRecord(req, res) {
 
 }
 
+export async function getAllRecords(req, res) {
+    try {
+
+        const record = await Record.find()
+            .populate({ path: "title content folder", select: "name" })
+
+        res.status(200).json(record)
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
+
 export async function editRecord(req, res){
     const { title, content } = req.body;
 

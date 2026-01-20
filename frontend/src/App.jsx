@@ -4,6 +4,7 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
 import { CreateRecord } from './assets/Record/CreateRecord.jsx'
+import { Dashboard } from './components/Dashboard.jsx'
 
 function App() {
 
@@ -11,6 +12,7 @@ function App() {
     <>
       <Routes>
           {/*Record Routes  */}
+          <Route path='/' element={<Dashboard/>}/>
           <Route path='/create-record' element={<CreateRecord/>} />
       </Routes>
     </>
