@@ -7,24 +7,34 @@ import folderRoutes from '../backend/src/routes/folderRoutes.js'
 import { connectDB } from '../backend/src/cofig/db.js'
 import dotenv from "dotenv"
 
-
 dotenv.config();
 
-const allowedOrgins = [
-    "http://localhost:5173"
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5001"
 ]
 
 const app = express();
-const server = http.createServer(app); //
+const server = http.createServer(app);
 
+// IMPORTANT: Middleware order matters!
+// 1. CORS must come BEFORE routes
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
+// 2. Then body parser
 app.use(express.json());
 
-app.use('/api/record', recordRoutes )
-app.use('/api/folder', folderRoutes )
+// 3. Then routes
+app.use('/api/record', recordRoutes);
+app.use('/api/folder', folderRoutes);
 
 connectDB();
 
-const PORT = process.env.PORT || 5001  // Moved this line up, and corrected "Port" to "PORT" (assuming it's a typo)
+const PORT = process.env.PORT || 5001;
 
 server.listen(PORT, () => {
     console.log("Server Connected", PORT)

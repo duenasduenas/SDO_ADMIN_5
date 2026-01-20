@@ -4,7 +4,7 @@ import { createRecord, editRecord, getRecordsByDay, getRecordsByMonth, getRecord
 const router = express.Router();
 
 router.put('/edit-record/:id', editRecord)
-router.post('/create-record/', createRecord)
+router.post('/create-record', createRecord)
 
 // get by days
 router.get('/day-record/:year/:month/:day', getRecordsByDay)

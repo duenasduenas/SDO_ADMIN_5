@@ -11,6 +11,45 @@ export async function getAllFolders(req,res) {
     }
 }
 
+export async function getFolderById(req, res) {
+    try {
+
+        console.log("ID:", req.params.id);
+
+        const folder = await Folder.findById(req.params.id)
+            .populate({ path: "name", select: "title" });
+
+        if (!folder) {
+            return res.status(404).json({ message: "Folder not found" });
+        }
+
+        res.status(200).json({
+            message: "Folder found",
+            folder
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export async function editFolder(req, res) {
+    const { name } = req.body;
+
+    try{
+        if(!name){
+            return res.status(404).json({ message: "Name is Required" })
+        }
+
+        const editFolder = await Folder.findByIdAndUpdate(req.params.id, { name })
+        res.status(200).json({ message: "Editted", editFolder })
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message })
+    }
+}
+
+
 export async function createFolder(req, res) {
     const { name } = req.body;
 
