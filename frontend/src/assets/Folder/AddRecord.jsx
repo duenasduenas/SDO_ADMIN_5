@@ -5,6 +5,7 @@ export default function AddRecord() {
     const { folderId } = useParams();
     const navigate = useNavigate();
     const [recordId, setRecordId] = useState("");
+    const [category, setCategory] = useState("")
     const [ title, setTitle ] = useState("")
     const [message, setMessage] = useState("");
 
@@ -50,14 +51,7 @@ export default function AddRecord() {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
             />
-
-            <input
-                className="w-full border p-2 rounded mb-2"
-                placeholder="Record ID"
-                value={category}
-                onChange={e => setTitle(e.target.value)}
-            />
-
+            
             <button
                 onClick={addRecord}
                 disabled={!folderId}
