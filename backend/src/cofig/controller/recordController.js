@@ -47,9 +47,20 @@ export async function createRecord(req, res) {
 
 }
 
-// export async function getRecordById(req, res) {
-//     const
-// }
+export async function getRecordById(req, res) {
+    
+    try{
+        const record = await Record.findById(req.params.id).populate({ path: "content title"})
+
+        if(!record) {
+            return res.status(404).json({ message: "Record Not Found"})
+        }
+        
+        res.status(200).json({record})
+    } catch (error) {
+        return res.status(500).json({ message: error.message})
+    }
+}
 
 export async function getAllRecords(req, res) {
     try {

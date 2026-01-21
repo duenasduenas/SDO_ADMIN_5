@@ -1,5 +1,5 @@
 import express from "express";
-import { createRecord, editRecord, getAllRecords, getRecordsByDay, getRecordsByMonth, getRecordsByWeek } from "../cofig/controller/recordController.js";
+import { createRecord, editRecord, getAllRecords, getRecordsByDay, getRecordsByMonth, getRecordsByWeek, getRecordById } from "../cofig/controller/recordController.js";
 
 const router = express.Router();
 
@@ -8,6 +8,7 @@ router.post('/create-record', createRecord)
 
 // get by days
 router.get('/', getAllRecords)
+router.get('/:id', getRecordById)
 
 router.get('/day-record/:year/:month/:day', getRecordsByDay)
 router.get('/month-record/:year/:month', getRecordsByMonth)  // Changed path
