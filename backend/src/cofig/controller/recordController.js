@@ -1,7 +1,7 @@
 import Record from "../../models/Record.js";
 
 export async function createRecord(req, res) {
-    const { title, content } = req.body;
+    const { title, content, image } = req.body;
 
     try{
         if(!title || !content){
@@ -23,6 +23,7 @@ export async function createRecord(req, res) {
         const newRecord = new Record({
             title,
             content,
+            image: image || null,
             createdAt: now, // Fixed: use "now" consistently
             dateInfo: {
                 year: now.getFullYear(),
@@ -46,6 +47,10 @@ export async function createRecord(req, res) {
 
 }
 
+// export async function getRecordById(req, res) {
+//     const
+// }
+
 export async function getAllRecords(req, res) {
     try {
 
@@ -60,14 +65,14 @@ export async function getAllRecords(req, res) {
 }
 
 export async function editRecord(req, res){
-    const { title, content } = req.body;
+    const { title, content, image } = req.body;
 
     try{
-        if( !title || !content){
+        if( !title || !content ){
             return res.status(404).json({message: "Title or Content is Missing"})
         }
 
-        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content })
+        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image })
 
         res.status(200).json({ message: "Editted", editRecord })       
 

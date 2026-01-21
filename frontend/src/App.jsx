@@ -5,6 +5,7 @@ import './App.css'
 import { Routes, Route } from 'react-router-dom'
 import { CreateRecord } from './assets/Record/CreateRecord.jsx'
 import { Dashboard } from './components/Dashboard.jsx'
+import AddRecord from './assets/Folder/AddRecord.jsx'
 
 function App() {
 
@@ -14,6 +15,7 @@ function App() {
           {/*Record Routes  */}
           <Route path='/' element={<Dashboard/>}/>
           <Route path='/create-record' element={<CreateRecord/>} />
+          <Route path="/add-record/:folderId" element={<AddRecord />} />
       </Routes>
     </>
   )

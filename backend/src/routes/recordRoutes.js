@@ -8,6 +8,7 @@ router.post('/create-record', createRecord)
 
 // get by days
 router.get('/', getAllRecords)
+
 router.get('/day-record/:year/:month/:day', getRecordsByDay)
 router.get('/month-record/:year/:month', getRecordsByMonth)  // Changed path
 router.get('/week-record/:year/:week', getRecordsByWeek)     // Changed path

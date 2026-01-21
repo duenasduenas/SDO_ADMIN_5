@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const recordSchema = new mongoose.Schema({
+    title: {type: String, required: true, unique: true},
     content: {type: String, required: true},
-    title: {type: String, required: true},
     createdAt: {type: Date, default: Date.now, immutable: true},
 
     dateInfo: {
@@ -14,6 +14,11 @@ const recordSchema = new mongoose.Schema({
         dayOfWeek: Number,
         dayName: String,
         fullDate: String
+    },
+
+    image: {
+        type: String,
+        default: null
     },
 
     folder: [{
