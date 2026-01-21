@@ -11,8 +11,8 @@ router.get('/', getAllRecords)
 router.get('/:id', getRecordById)
 
 router.get('/day-record/:year/:month/:day', getRecordsByDay)
-router.get('/month-record/:year/:month', getRecordsByMonth)  // Changed path
-router.get('/week-record/:year/:week', getRecordsByWeek)     // Changed path
+router.get('/month-record/:year/:month', getRecordsByMonth)  
+router.get('/week-record/:year/:week', getRecordsByWeek)     
 
 
 

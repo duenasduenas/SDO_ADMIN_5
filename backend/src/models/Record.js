@@ -4,6 +4,7 @@ const recordSchema = new mongoose.Schema({
     title: {type: String, required: true, unique: true},
     content: {type: String, required: true},
     createdAt: {type: Date, default: Date.now, immutable: true},
+    category: {type: String, required: true},
 
     dateInfo: {
         year: Number,

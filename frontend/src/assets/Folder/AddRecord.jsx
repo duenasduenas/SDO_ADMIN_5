@@ -51,6 +51,13 @@ export default function AddRecord() {
                 onChange={e => setTitle(e.target.value)}
             />
 
+            <input
+                className="w-full border p-2 rounded mb-2"
+                placeholder="Record ID"
+                value={category}
+                onChange={e => setTitle(e.target.value)}
+            />
+
             <button
                 onClick={addRecord}
                 disabled={!folderId}

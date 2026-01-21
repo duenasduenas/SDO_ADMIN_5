@@ -3,6 +3,7 @@ import { FileText, X, Loader } from "lucide-react";
 
 export function CreateRecord() {
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("")
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -10,7 +11,7 @@ export function CreateRecord() {
 
   const handleSubmit = async () => {
     // Validation
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || !content.trim() || !category.trim()) {
       setError("Both title and content are required");
       return;
     }
@@ -27,6 +28,7 @@ export function CreateRecord() {
         },
         body: JSON.stringify({
           title: title.trim(),
+          category: category.trim(),
           content: content.trim()
         })
       });
@@ -51,6 +53,7 @@ export function CreateRecord() {
       // Reset form on success
       setTitle("");
       setContent("");
+      setCategory("");
       setSuccess(true);
       
       // Clear success message after 3 seconds
@@ -67,6 +70,7 @@ export function CreateRecord() {
   const handleClear = () => {
     setTitle("");
     setContent("");
+    setCategory("");
     setError("");
     setSuccess(false);
   };
@@ -121,6 +125,21 @@ export function CreateRecord() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter record title"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Category Input */}
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="Enter record category"
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               />

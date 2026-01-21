@@ -1,10 +1,10 @@
 import Record from "../../models/Record.js";
 
 export async function createRecord(req, res) {
-    const { title, content, image } = req.body;
+    const { title, content, image, category } = req.body;
 
     try{
-        if(!title || !content){
+        if(!title || !content || !category){
             return res.status(400).json({ message: "Title and Content is Required" });
         }
 
@@ -23,6 +23,7 @@ export async function createRecord(req, res) {
         const newRecord = new Record({
             title,
             content,
+            category,
             image: image || null,
             createdAt: now, // Fixed: use "now" consistently
             dateInfo: {
@@ -50,7 +51,7 @@ export async function createRecord(req, res) {
 export async function getRecordById(req, res) {
     
     try{
-        const record = await Record.findById(req.params.id).populate({ path: "content title"})
+        const record = await Record.findById(req.params.id).populate({ path: "content title category"})
 
         if(!record) {
             return res.status(404).json({ message: "Record Not Found"})
@@ -66,7 +67,7 @@ export async function getAllRecords(req, res) {
     try {
 
         const record = await Record.find()
-            .populate({ path: "title content folder", select: "name" })
+            .populate({ path: "title content folder category image", select: "name" })
 
         res.status(200).json(record)
 
@@ -76,14 +77,14 @@ export async function getAllRecords(req, res) {
 }
 
 export async function editRecord(req, res){
-    const { title, content, image } = req.body;
+    const { title, content, image, category } = req.body;
 
     try{
-        if( !title || !content ){
-            return res.status(404).json({message: "Title or Content is Missing"})
+        if( !title || !content || !category ){
+            return res.status(404).json({message: "Title, Content, Category is Missing"})
         }
 
-        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image })
+        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image, category })
 
         res.status(200).json({ message: "Editted", editRecord })       
 

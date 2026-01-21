@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, FolderOpen, Calendar, Clock, Search, Plus, Trash2, Eye, MoreVertical } from "lucide-react";
 import { Link } from "react-router-dom";
+import SummaryDropdown from "./SummaryDropDown";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -245,6 +246,16 @@ export function Dashboard() {
           >
             Folders
           </button>
+
+          <SummaryDropdown
+            apiBaseUrl={API_BASE_URL}
+            onResult={(summaryRecords) => {
+              setRecords(summaryRecords);
+              setView("records"); // auto-switch to records view
+            }}
+          />
+
+
         </div>
       </div>
 
@@ -259,7 +270,7 @@ export function Dashboard() {
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-600">
               <div className="col-span-6">Name</div>
-              <div className="col-span-2">Type</div>
+              <div className="col-span-2">Category</div>
               <div className="col-span-2">Modified</div>
               <div className="col-span-2 text-right">Actions</div>
             </div>
@@ -315,7 +326,7 @@ export function Dashboard() {
                     <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     <span className="font-medium text-gray-900 truncate">{record.title}</span>
                   </div>
-                  <div className="col-span-2 text-sm text-gray-600">Document</div>
+                  <div className="col-span-2 text-sm text-gray-600">{record.category}</div>
                   <div className="col-span-2 text-sm text-gray-600">
                     {formatDate(record.createdAt)}
                   </div>
