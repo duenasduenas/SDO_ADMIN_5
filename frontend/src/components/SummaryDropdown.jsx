@@ -1,49 +1,62 @@
+// SummaryDropdown.jsx
 import { useState } from "react";
 
-export default function SummaryDropdown({ apiBaseUrl, onResult }) {
+// Define the component as a function
+const SummaryDropdown = ({ apiBaseUrl, year, week, month, day, onResult }) => {  // Add props as needed (e.g., for apiBaseUrl, year, etc.)
   const [open, setOpen] = useState(false);
 
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-
-  const getWeekNumber = (date) => {
-    const firstDay = new Date(date.getFullYear(), 0, 1);
-    const pastDays = (date - firstDay) / 86400000;
-    return Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
-  };
-
-  const week = getWeekNumber(today);
-
   const fetchSummary = async (type) => {
+    let recordsUrl = "";
+    let periodLabel = "";
+
+    if (type === "day") {
+      recordsUrl = `${apiBaseUrl}/record/day-record/${year}/${month}/${day}`;
+      periodLabel = "daily";
+    } else if (type === "week") {
+      recordsUrl = `${apiBaseUrl}/record/week-record/${year}/${week}`;
+      periodLabel = "weekly";
+    } else if (type === "month") {
+      recordsUrl = `${apiBaseUrl}/record/month-record/${year}/${month}`;
+      periodLabel = "monthly";
+    } else if (type === "all") {
+      recordsUrl = `${apiBaseUrl}/record/all-records`;  // Adjust URL if needed
+      periodLabel = "all-time";
+    }
+
     try {
-      let url = "";
-
-      if (type === "day") {
-        url = `${apiBaseUrl}/record/day-record/${year}/${month}/${day}`;
-      } else if (type === "week") {
-        url = `${apiBaseUrl}/record/week-record/${year}/${week}`;
-      } else if (type === "month") {
-        url = `${apiBaseUrl}/record/month-record/${year}/${month}`;
-      } else if (type === "all") {
-        url = `${apiBaseUrl}/record/`;
-      }
-
-      console.log("Fetching from:", url); // Debug log
-      const res = await fetch(url);
-      
+      const res = await fetch(recordsUrl);
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        throw new Error(`Failed to fetch records: ${res.statusText}`);
       }
-      
       const data = await res.json();
-      console.log("Received data:", data); // Debug log
-      onResult(data.records || data || []); // Handle different response formats
-      setOpen(false);
+
+      onResult(data.records || []);
+
+      if (data.records && data.records.length > 0) {
+        const aiRes = await fetch(`${apiBaseUrl}/ai/summary`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            records: data.records,
+            period: periodLabel
+          })
+        });
+
+        if (!aiRes.ok) {
+          throw new Error(`AI summary failed: ${aiRes.statusText}`);
+        }
+
+        const aiData = await aiRes.json();
+        console.log("AI Summary:", aiData.summary);
+        // Optionally, handle aiData.summary (e.g., display it in the UI)
+      } else {
+        console.log("No records to summarize.");
+      }
     } catch (error) {
-        console.error("Error fetching summary:", error);
-        setOpen(false);
+      console.error("Error fetching summary:", error);
+      // Optionally, show an error message to the user
+    } finally {
+      setOpen(false);
     }
   };
 
@@ -89,7 +102,6 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
           >
             Monthly
           </button>
-
           <button
             onClick={() => fetchSummary("all")}
             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
@@ -100,4 +112,6 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
       )}
     </div>
   );
-}
+};
+
+export default SummaryDropdown;

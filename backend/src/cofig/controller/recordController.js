@@ -63,17 +63,61 @@ export async function getRecordById(req, res) {
     }
 }
 
-export async function getAllRecords(req, res) {
-    try {
+export async function deleteRecord(req, res) {
+  try {
+    const { id } = req.params;  // Get the record ID from the URL params (e.g., /record/123)
 
-        const record = await Record.find()
-            .populate({ path: "title content folder category image", select: "name" })
-
-        res.status(200).json(record)
-
-    } catch (error) {
-        return res.status(500).json({ message: error.message })
+    // Validate the ID (optional but recommended for security)
+    if (!id) {
+      return res.status(400).json({ message: "Record ID is required" });
     }
+
+    // Find and delete the record
+    const deletedRecord = await Record.findByIdAndDelete(id);
+
+    // Check if the record existed
+    if (!deletedRecord) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+
+    // Success response
+    res.status(200).json({
+      message: "Record deleted successfully",
+      deletedRecord: { _id: deletedRecord._id, title: deletedRecord.title }  // Optional: Return minimal info
+    });
+
+  } catch (error) {
+    console.error("Delete record error:", error);
+    res.status(500).json({ message: "Failed to delete record", error: error.message });
+  }
+}
+
+export async function getAllRecords(req, res) {
+  try {
+    // Fixed populate: Only populate 'folder' (assuming it's an array of ObjectIds referencing Folder model)
+    // Remove invalid paths like 'title', 'content', etc., as they're not references
+    const records = await Record.find()
+      .populate({ path: "title content folder category image", select: "name" });  // Only this is valid
+
+    // Extract unique categories from the fetched records
+    const categories = [...new Set(records.map(r => r.category).filter(Boolean))];  // Unique, non-null categories
+
+    res.status(200).json({ records, categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// New function for dedicated categories endpoint (optional, for efficiency)
+export async function getCategories(req, res) {
+  try {
+    const categories = await Record.distinct('category');  // Or the fallback version I provided earlier
+    const filteredCategories = categories.filter(Boolean);
+    res.status(200).json({ categories: filteredCategories });
+  } catch (error) {
+    console.error("getCategories error:", error);
+    res.status(500).json({ message: error.message });
+  }
 }
 
 export async function editRecord(req, res){

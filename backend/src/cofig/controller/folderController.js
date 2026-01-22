@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Folder from "../../models/Folder.js";
 import Record from "../../models/Record.js";
+import fs from 'fs/promises';
+import path from 'path';
 
 export async function getAllFolders(req, res) {
   try {
@@ -70,6 +72,29 @@ export async function createFolder(req, res) {
     } catch (error) {
         return res.status(500).json({ message: error.message })
     }
+}
+
+export async function deleteFolder(req, res) {
+  const folderId = req.params.id;
+
+  if (!folderId) {
+    return res.status(400).json({ message: "Folder ID is required" });
+  }
+
+  try {
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" });
+    }
+
+    // Only delete the folder itself, not its records
+    await Folder.deleteOne({ _id: folderId });
+
+    res.status(200).json({ message: "Folder deleted successfully", id: folderId });
+  } catch (err) {
+    console.error("Delete Folder Error:", err);
+    res.status(500).json({ message: "Failed to delete folder" });
+  }
 }
 
 

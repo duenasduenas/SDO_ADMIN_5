@@ -1,70 +1,68 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
-export default function MonthlySummaryModal({
-  isOpen,
-  onClose,
-  apiBaseUrl
-}) {
+export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState("");
   const [loading, setLoading] = useState(false);
   const [monthlyRecords, setMonthlyRecords] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [folderNames, setFolderNames] = useState({});
 
-  // ✅ Calculate ISO week number from date
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // Helper: ISO week number
   const getWeekNumber = (date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + 4 - (d.getDay() || 7));
     const yearStart = new Date(d.getFullYear(), 0, 1);
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    return weekNo;
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   };
 
-  // ✅ summary generator for monthly data
+  // Generate summary
   const generateMonthlySummary = (records) => {
-    if (!records.length) return null;
+    if (!Array.isArray(records) || records.length === 0) return null;
 
     const total = records.length;
     const byDay = {};
     const recordsByDate = {};
     const recordsByWeek = {};
     const categories = {};
+    const folders = {};
     const weeklyBreakdown = {};
     let withFolder = 0;
 
     records.forEach(r => {
-      const day = r.dateInfo.dayName;
-      const fullDate = r.dateInfo.fullDate;
-      
+      const day = r.dateInfo?.dayName || "Unknown";
+      const fullDate = r.dateInfo?.fullDate || "Unknown";
+
       byDay[day] = (byDay[day] || 0) + 1;
-      
-      // Group records by full date
-      if (!recordsByDate[fullDate]) {
-        recordsByDate[fullDate] = { day, records: [], categories: {} };
-      }
+
+      if (!recordsByDate[fullDate]) recordsByDate[fullDate] = { day, records: [], categories: {} };
       recordsByDate[fullDate].records.push(r);
-      
-      // Track categories per date
-      if (r.category) {
-        recordsByDate[fullDate].categories[r.category] = (recordsByDate[fullDate].categories[r.category] || 0) + 1;
-      }
-
-      // Calculate week number from date
-      const weekNum = r.dateInfo.weekNumber || getWeekNumber(fullDate);
-      weeklyBreakdown[weekNum] = (weeklyBreakdown[weekNum] || 0) + 1;
-      
-      if (!recordsByWeek[weekNum]) {
-        recordsByWeek[weekNum] = [];
-      }
-      recordsByWeek[weekNum].push(r);
 
       if (r.category) {
+        recordsByDate[fullDate].categories[r.category] =
+          (recordsByDate[fullDate].categories[r.category] || 0) + 1;
         categories[r.category] = (categories[r.category] || 0) + 1;
       }
 
-      if (r.folder?.length > 0) withFolder++;
+      if (r.folder?.length > 0) {
+        r.folder.forEach(f => {
+          folders[f] = (folders[f] || 0) + 1;
+        });
+        withFolder++;
+      }
+
+      const weekNum = r.dateInfo?.weekNumber || getWeekNumber(fullDate);
+      weeklyBreakdown[weekNum] = (weeklyBreakdown[weekNum] || 0) + 1;
+
+      if (!recordsByWeek[weekNum]) recordsByWeek[weekNum] = [];
+      recordsByWeek[weekNum].push(r);
     });
 
     const mostActiveDay = Object.entries(byDay)
@@ -74,12 +72,10 @@ export default function MonthlySummaryModal({
       (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
     );
 
-    // Sort dates chronologically
     const sortedRecordsByDate = Object.entries(recordsByDate)
       .sort((a, b) => new Date(a[0]) - new Date(b[0]))
       .map(([date, data]) => ({ date, ...data }));
 
-    // Sort weeks and prepare records by week
     const sortedRecordsByWeek = Object.entries(recordsByWeek)
       .sort((a, b) => Number(a[0]) - Number(b[0]))
       .map(([week, weekRecords]) => ({
@@ -90,51 +86,99 @@ export default function MonthlySummaryModal({
 
     return {
       totalRecords: total,
-      dateRange: `${sortedByTime[0].dateInfo.fullDate} – ${sortedByTime.at(-1).dateInfo.fullDate}`,
-      mostActiveDay: mostActiveDay
-        ? `${mostActiveDay[0]} (${mostActiveDay[1]} records)`
+      dateRange: sortedByTime.length > 0
+        ? `${sortedByTime[0]?.dateInfo?.fullDate || "N/A"} – ${sortedByTime.at(-1)?.dateInfo?.fullDate || "N/A"}`
         : "N/A",
-      allCategories: Object.entries(categories)
-        .sort((a, b) => b[1] - a[1]),
+      mostActiveDay: mostActiveDay ? `${mostActiveDay[0]} (${mostActiveDay[1]} records)` : "N/A",
+      allCategories: Object.entries(categories).sort((a, b) => b[1] - a[1]),
+      allFolders: Object.entries(folders).sort((a, b) => b[1] - a[1]),
       weeklyBreakdown: Object.entries(weeklyBreakdown)
         .sort((a, b) => Number(a[0]) - Number(b[0])),
-      folderUsage: {
-        withFolder,
-        withoutFolder: total - withFolder
-      },
-      latestRecord: sortedByTime.at(-1).title,
+      folderUsage: { withFolder, withoutFolder: total - withFolder },
+      latestRecord: sortedByTime.length > 0 ? sortedByTime.at(-1)?.title || "N/A" : "N/A",
       recordsByDate: sortedRecordsByDate,
       recordsByWeek: sortedRecordsByWeek,
-      averagePerDay: (total / sortedRecordsByDate.length).toFixed(1)
+      averagePerDay: sortedRecordsByDate.length > 0
+        ? (total / sortedRecordsByDate.length).toFixed(1)
+        : "0"
     };
   };
 
-  // ✅ fetch + generate
+  // Fetch monthly records + AI summary
   const fetchMonthlyRecords = async () => {
     if (!month) return alert("Please enter a month number (1-12)");
 
     try {
       setLoading(true);
-      const res = await fetch(
-        `${apiBaseUrl}/record/month-record/${year}/${month}`
-      );
-      const data = await res.json();
 
-      setMonthlyRecords(data.records);
-      setSummary(generateMonthlySummary(data.records));
+      // Fetch records
+      const res = await fetch(`${apiBaseUrl}/record/month-record/${year}/${month}`);
+      const data = await res.json();
+      const records = Array.isArray(data.records) ? data.records : [];
+
+      setMonthlyRecords(records);
+
+      // Fetch folder names
+      const folderIds = new Set();
+      records.forEach(r => {
+        if (r.folder?.length > 0) {
+          r.folder.forEach(f => folderIds.add(f));
+        }
+      });
+
+      const folderNameMap = {};
+      if (folderIds.size > 0) {
+        try {
+          const folderRes = await fetch(`${apiBaseUrl}/folder`);
+          const folderData = await folderRes.json();
+          if (Array.isArray(folderData.folders)) {
+            folderData.folders.forEach(folder => {
+              if (folderIds.has(folder._id)) {
+                folderNameMap[folder._id] = folder.name;
+              }
+            });
+          }
+        } catch (err) {
+          console.error("Failed to fetch folder names:", err);
+        }
+      }
+      setFolderNames(folderNameMap);
+
+      // Generate local summary
+      const localSummary = generateMonthlySummary(records) || {};
+
+      // Fetch AI summary safely
+      let aiSummary = null;
+      let keywords = [];
+      try {
+        const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ period: "monthly", records })
+        });
+
+        if (ragRes.ok) {
+          const ragData = await ragRes.json();
+          aiSummary = ragData.summary || null;
+          keywords = Array.isArray(ragData.keywords) ? ragData.keywords : [];
+        } else {
+          console.warn("RAG API returned status:", ragRes.status);
+        }
+      } catch (err) {
+        console.error("RAG API error:", err);
+      }
+
+      // Merge summaries
+      setSummary({ ...localSummary, aiSummary, keywords });
     } catch (err) {
       console.error("Failed to fetch monthly records", err);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
   };
 
   if (!isOpen) return null;
-
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -147,12 +191,10 @@ export default function MonthlySummaryModal({
           <X />
         </button>
 
-        <h2 className="text-xl font-semibold mb-4">
-          Monthly Summary
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">Monthly Summary</h2>
 
         {/* INPUTS */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-sm text-gray-600 mb-1">Year</label>
             <input
@@ -162,7 +204,6 @@ export default function MonthlySummaryModal({
               className="w-full border rounded-lg px-3 py-2"
             />
           </div>
-
           <div>
             <label className="block text-sm text-gray-600 mb-1">Month (1-12)</label>
             <input
@@ -177,163 +218,150 @@ export default function MonthlySummaryModal({
         </div>
 
         {/* SUMMARY OUTPUT */}
-        {summary && (
-          <div className="mt-6 flex-1 overflow-y-auto">
-            <div className="space-y-3 text-sm">
-              {/* Month Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg">
-                <h3 className="text-lg font-bold">
-                  {monthNames[Number(month) - 1]} {year}
-                </h3>
-                <p className="text-blue-100 text-sm">
-                  {summary.totalRecords} total records • {summary.averagePerDay} avg per day
-                </p>
-              </div>
+        {summary ? (
+          <div className="mt-6 flex-1 overflow-y-auto space-y-4 text-sm">
+            
+            {/* Month Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg">
+              <h3 className="text-lg font-bold">
+                {monthNames[Number(month) - 1] || "Unknown"} {year}
+              </h3>
+              <p className="text-blue-100 text-sm">
+                {summary.totalRecords || 0} total records • {summary.averagePerDay} avg per day
+              </p>
+            </div>
 
-              {/* Summary Stats Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-3 rounded border">
-                  <p className="text-gray-600 text-xs mb-1">Date Range</p>
-                  <p className="font-semibold">{summary.dateRange}</p>
-                </div>
-                <div className="bg-white p-3 rounded border">
-                  <p className="text-gray-600 text-xs mb-1">Most Active Day</p>
-                  <p className="font-semibold">{summary.mostActiveDay}</p>
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div className="bg-white p-3 rounded border">
-                <strong>All Categories:</strong>
-                {summary.allCategories.length > 0 ? (
-                  <ul className="list-disc ml-5 mt-1">
-                    {summary.allCategories.map(([cat, count]) => (
-                      <li key={cat}>{cat} ({count} records)</li>
+            {/* AI RAG Summary */}
+            {summary.aiSummary && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                <p className="text-sm font-semibold text-yellow-800 mb-1">AI Monthly Insight</p>
+                <p className="text-sm text-gray-700 leading-relaxed">{summary.aiSummary}</p>
+                {summary.keywords?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {summary.keywords.map(k => (
+                      <span key={k} className="px-2 py-1 text-xs bg-yellow-200 text-yellow-900 rounded">{k}</span>
                     ))}
-                  </ul>
-                ) : (
-                  <p className="ml-5 italic">None</p>
+                  </div>
                 )}
               </div>
+            )}
 
-              {/* Weekly Breakdown */}
-              <div className="bg-white p-3 rounded border">
-                <strong className="block mb-2">Weekly Breakdown:</strong>
-                <div className="grid grid-cols-2 gap-2">
-                  {summary.weeklyBreakdown.map(([week, count]) => (
+            {/* All Folders */}
+            <div className="bg-white p-3 rounded border">
+              <strong>All Folders:</strong>
+              {Array.isArray(summary.allFolders) && summary.allFolders.length > 0 ? (
+                <ul className="list-disc ml-5 mt-1">
+                  {summary.allFolders.map(([folderId, count]) => (
+                    <li key={folderId}>
+                      {folderNames[folderId] || folderId} ({count} records)
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="ml-5 italic">None</p>
+              )}
+            </div>
+
+            {/* Weekly Breakdown */}
+            <div className="bg-white p-3 rounded border">
+              <strong className="block mb-2">Weekly Breakdown:</strong>
+              <div className="grid grid-cols-2 gap-2">
+                {Array.isArray(summary.weeklyBreakdown) && summary.weeklyBreakdown.length > 0 ? (
+                  summary.weeklyBreakdown.map(([week, count]) => (
                     <div key={week} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded">
                       <span className="text-gray-700">Week {week}</span>
                       <span className="font-semibold text-blue-600">{count} records</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Folder Usage */}
-              <div className="bg-white p-3 rounded border">
-                <p>
-                  <strong>Folder Usage:</strong>{" "}
-                  {summary.folderUsage.withFolder} in folders,{" "}
-                  {summary.folderUsage.withoutFolder} not in folders
-                </p>
-              </div>
-
-              {/* Records by Week */}
-              <div className="bg-white p-3 rounded border">
-                <strong className="block mb-3">Records by Week:</strong>
-                {summary.recordsByWeek && summary.recordsByWeek.length > 0 ? (
-                  <div className="space-y-3">
-                    {summary.recordsByWeek.map(({ week, count, records }) => (
-                      <div key={week} className="p-3 bg-purple-50 rounded border-l-4 border-purple-500">
-                        <p className="font-semibold text-purple-700 mb-2">
-                          Week {week}
-                          <span className="ml-2 text-xs font-normal text-gray-600">
-                            ({count} record{count !== 1 ? 's' : ''})
-                          </span>
-                        </p>
-                        <div className="space-y-1.5">
-                          {records.map((record, idx) => (
-                            <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-purple-300 bg-white rounded">
-                              <span className="text-xs text-gray-500">{record.dateInfo.fullDate} ({record.dateInfo.dayName})</span>
-                              <br />
-                              <span className="font-medium text-gray-800">{record.title}</span>
-                              {record.category && (
-                                <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                                  {record.category}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  ))
                 ) : (
-                  <p className="ml-5 italic text-gray-500">No records found</p>
-                )}
-              </div>
-
-              {/* Records by Date */}
-              <div className="bg-white p-3 rounded border">
-                <strong className="block mb-3">Records by Date:</strong>
-                {summary.recordsByDate && summary.recordsByDate.length > 0 ? (
-                  <div className="space-y-3">
-                    {summary.recordsByDate.map(({ date, day, records, categories }) => (
-                      <div key={date} className="p-3 bg-green-50 rounded border-l-4 border-green-500">
-                        <p className="font-semibold text-green-700 mb-2">
-                          {day}, {date}
-                          <span className="ml-2 text-xs font-normal text-gray-600">
-                            ({records.length} record{records.length !== 1 ? 's' : ''})
-                          </span>
-                        </p>
-                        
-                        {/* Category breakdown for this date */}
-                        {Object.keys(categories).length > 0 && (
-                          <div className="mb-2 text-sm">
-                            {Object.entries(categories).map(([cat, count]) => (
-                              <span key={cat} className="inline-block mr-2 mb-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                                {cat} ({count})
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                          {records.map((record, idx) => (
-                            <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-green-300 bg-white rounded">
-                              <span className="font-medium text-gray-800">{record.title}</span>
-                              {record.category && (
-                                <span className="ml-2 text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
-                                  {record.category}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="ml-5 italic text-gray-500">No records found</p>
+                  <p className="italic text-gray-500">No weekly data</p>
                 )}
               </div>
             </div>
+
+            {/* Folder Usage */}
+            <div className="bg-white p-3 rounded border">
+              <p>
+                <strong>Folder Usage:</strong>{" "}
+                {summary.folderUsage?.withFolder || 0} in folders,{" "}
+                {summary.folderUsage?.withoutFolder || 0} not in folders
+              </p>
+            </div>
+
+            {/* Records by Week */}
+            <div className="bg-white p-3 rounded border">
+              <strong className="block mb-3">Records by Week:</strong>
+              {Array.isArray(summary.recordsByWeek) && summary.recordsByWeek.length > 0 ? (
+                summary.recordsByWeek.map(({ week, count, records }) => (
+                  <div key={week} className="p-3 bg-purple-50 rounded border-l-4 border-purple-500 mb-3">
+                    <p className="font-semibold text-purple-700 mb-2">
+                      Week {week} <span className="ml-2 text-xs font-normal text-gray-600">({count} record{count !== 1 ? 's' : ''})</span>
+                    </p>
+                    <div className="space-y-1.5">
+                      {Array.isArray(records) && records.map((record, idx) => (
+                        <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-purple-300 bg-white rounded">
+                          <span className="text-xs text-gray-500">{record.dateInfo?.fullDate || "N/A"} ({record.dateInfo?.dayName || "N/A"})</span>
+                          <br />
+                          <span className="font-medium text-gray-800">{record.title || "Untitled"}</span>
+                          {record.category && (
+                            <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">{record.category}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="ml-5 italic text-gray-500">No records found</p>
+              )}
+            </div>
+
+            {/* Records by Date */}
+            <div className="bg-white p-3 rounded border">
+              <strong className="block mb-3">Records by Date:</strong>
+              {Array.isArray(summary.recordsByDate) && summary.recordsByDate.length > 0 ? (
+                summary.recordsByDate.map(({ date, day, records, categories }) => (
+                  <div key={date} className="p-3 bg-green-50 rounded border-l-4 border-green-500 mb-3">
+                    <p className="font-semibold text-green-700 mb-2">
+                      {day}, {date} <span className="ml-2 text-xs font-normal text-gray-600">({records?.length || 0} record{(records?.length || 0) !== 1 ? 's' : ''})</span>
+                    </p>
+                    {/* Category breakdown */}
+                    {categories && Object.keys(categories).length > 0 && (
+                      <div className="mb-2 text-sm">
+                        {Object.entries(categories).map(([cat, count]) => (
+                          <span key={cat} className="inline-block mr-2 mb-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                            {cat} ({count})
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Records */}
+                    <div className="space-y-1.5">
+                      {Array.isArray(records) && records.map((record, idx) => (
+                        <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-green-300 bg-white rounded">
+                          <span className="font-medium text-gray-800">{record.title || "Untitled"}</span>
+                          {record.category && (
+                            <span className="ml-2 text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">{record.category}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="ml-5 italic text-gray-500">No records found</p>
+              )}
+            </div>
+
           </div>
+        ) : (
+          <p className="text-gray-500 italic mt-4">No summary available. Click "Generate" to fetch data.</p>
         )}
 
         {/* ACTIONS */}
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg border hover:bg-gray-50"
-          >
-            Close
-          </button>
-          <button
-            onClick={fetchMonthlyRecords}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border hover:bg-gray-50">Close</button>
+          <button onClick={fetchMonthlyRecords} disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
             {loading ? "Loading..." : "Generate"}
           </button>
         </div>

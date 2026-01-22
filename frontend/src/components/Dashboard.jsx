@@ -8,6 +8,7 @@ import MonthlySummaryModal from "../assets/Summary/monthlySummaryModal";
 import CreateDropDown from "./CreateDropDown";
 import CreateFolderModal from "../assets/Folder/CreateFolderModal";
 import  CreateRecordModal  from "../assets/Record/CreateRecordModal";
+import DeleteFolderButton from "./DeleteFolderButton";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -51,24 +52,25 @@ export function Dashboard() {
     fetchData();
   }, []);
 
+  // In Dashboard.jsx, replace the fetchData function with this:
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch records
+      // Fetch records (now returns { records: [...], categories: [...] })
       const recordsRes = await fetch(`${API_BASE_URL}/record`);
       if (recordsRes.ok) {
         const recordsText = await recordsRes.text();
-        const recordsData = recordsText ? JSON.parse(recordsText) : [];
-        setRecords(recordsData);
+        const data = recordsText ? JSON.parse(recordsText) : { records: [], categories: [] };
+        setRecords(data.records || []);  // Extract the array
+        // If you want to use backend-provided categories, set them here (optional)
+        // setCategories(data.categories || []);  // Uncomment if needed for other uses
       }
 
-      // Fetch folders
+      // Fetch folders (unchanged, assuming it returns { folders: [...] })
       const foldersRes = await fetch(`${API_BASE_URL}/folder`);
       if (foldersRes.ok) {
         const foldersText = await foldersRes.text();
-        const foldersData = foldersText ? JSON.parse(foldersText) : {};
-
-        // ✅ Make sure we set an array
+        const foldersData = foldersText ? JSON.parse(foldersText) : { folders: [] };
         setFolders(Array.isArray(foldersData.folders) ? foldersData.folders : []);
       }
 
@@ -350,43 +352,47 @@ export function Dashboard() {
 
             {/* Items List */}
             <div className="divide-y divide-gray-200">
-              {/* Folders */}
-              {(view === "all" || view === "folders") && filteredFolders.map((folder) => (
-                <div
-                  key={folder._id}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer items-center"
-                  onClick={() => openFolder(folder)}
+              
+            {/* Folders */}
+            {(view === "all" || view === "folders") && filteredFolders.map((folder) => (
+            <div
+              key={folder._id}
+              className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer items-center"
+              onClick={() => openFolder(folder)}
+            >
+              <div className="col-span-6 flex items-center gap-3">
+                <FolderOpen className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                <span className="font-medium text-gray-900 truncate">{folder.name}</span>
+              </div>
+              <div className="col-span-2 text-sm text-gray-600">Folder</div>
+              <div className="col-span-2 text-sm text-gray-600">
+                {formatDate(folder.createdAt)}
+              </div>
+              <div className="col-span-2 flex justify-end gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openFolder(folder);
+                  }}
+                  className="p-2 hover:bg-gray-200 rounded"
                 >
-                  <div className="col-span-6 flex items-center gap-3">
-                    <FolderOpen className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                    <span className="font-medium text-gray-900 truncate">{folder.name}</span>
-                  </div>
-                  <div className="col-span-2 text-sm text-gray-600">Folder</div>
-                  <div className="col-span-2 text-sm text-gray-600">
-                    {formatDate(folder.createdAt)}
-                  </div>
-                  <div className="col-span-2 flex justify-end gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openFolder(folder);
-                      }}
-                      className="p-2 hover:bg-gray-200 rounded"
-                    >
-                      <Eye className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteFolder(folder._id);
-                      }}
-                      className="p-2 hover:bg-gray-200 rounded"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-500" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  <Eye className="w-4 h-4 text-gray-500" />
+                </button>
+
+                {/* Replace this button with DeleteFolderButton */}
+                <DeleteFolderButton
+                  folderId={folder._id}
+                  API_BASE_URL={API_BASE_URL}
+                  onDeleted={(id) => {
+                    // Update your folders state after deletion
+                    setFolders(prev => prev.filter(f => f._id !== id));
+                    setSelectedFolder(null);
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+
 
               {/* Records */}
               {(view === "all" || view === "records") && filteredRecords.map((record) => (
@@ -473,6 +479,8 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      
 
       {/* Record Detail Modal */}
       {selectedRecord && (
