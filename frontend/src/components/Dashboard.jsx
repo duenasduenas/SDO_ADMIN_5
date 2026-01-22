@@ -418,6 +418,9 @@ export function Dashboard() {
                       <Clock className="w-4 h-4" />
                       {selectedRecord.dateInfo.dayName}
                     </span>
+                    <span className="">
+                      {selectedRecord.folder?.name || "No Folder"}
+                    </span>
                   </div>
                 )}
               </div>

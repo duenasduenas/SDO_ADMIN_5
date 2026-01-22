@@ -51,7 +51,7 @@ export async function createRecord(req, res) {
 export async function getRecordById(req, res) {
     
     try{
-        const record = await Record.findById(req.params.id).populate({ path: "content title category"})
+        const record = await Record.findById(req.params.id).populate({ path: "content title category folder", select: "name"})
 
         if(!record) {
             return res.status(404).json({ message: "Record Not Found"})
