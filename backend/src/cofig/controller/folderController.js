@@ -2,14 +2,16 @@ import mongoose from "mongoose";
 import Folder from "../../models/Folder.js";
 import Record from "../../models/Record.js";
 
-export async function getAllFolders(req,res) {
-    try{
-        const folders = await Folder.find().populate({path: "name record"}).sort({ createdAt: -1 });
-        res.status(200).json(folders)
-    } catch (error) {
-        return res.status(500).json({message: error.message})
-    }
+export async function getAllFolders(req, res) {
+  try {
+    const folders = await Folder.find().populate('record'); // populate record if you want count/details
+    res.status(200).json({ folders }); // <-- must send { folders: [...] }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch folders' });
+  }
 }
+
 
 export async function getFolderById(req, res) {
     try {

@@ -1,78 +1,70 @@
 import React, { useState } from "react";
 import { FileText, X, Loader } from "lucide-react";
 
-export function CreateRecord() {
+export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("")
+  const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async () => {
-    // Validation
     if (!title.trim() || !content.trim() || !category.trim()) {
-      setError("Both title and content are required");
+      setError("All fields are required");
       return;
     }
 
     setLoading(true);
     setError("");
-    setSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:5001/api/record/create-record', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          category: category.trim(),
-          content: content.trim()
-        })
+      // Step 1: Create the record
+      const res = await fetch(`${apiBaseUrl}/record/create-record`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, category, content }),
       });
 
-      // Check if response has content
-      const text = await response.text();
-      let data;
-      
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch (e) {
-        console.error('Invalid JSON response:', text);
-        throw new Error('Server returned invalid response');
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!res.ok) throw new Error(data.message || "Failed to create record");
+
+      const newRecord = data; // assume backend returns the record
+
+      // Step 2: If folderId is provided, add the record to the folder
+      if (folderId) {
+        const folderRes = await fetch(`${apiBaseUrl}/folder/add-record/${folderId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recordId: newRecord._id }),
+        });
+
+        const folderText = await folderRes.text();
+        const folderData = folderText ? JSON.parse(folderText) : {};
+
+        if (!folderRes.ok) throw new Error(folderData.message || "Failed to add record to folder");
       }
 
-      if (!response.ok) {
-        throw new Error(data.message || `Server error: ${response.status}`);
-      }
-
-      console.log("Record created:", data);
-      
-      // Reset form on success
+      // Step 3: Notify parent and reset
+      onSuccess?.(newRecord);
       setTitle("");
-      setContent("");
       setCategory("");
+      setContent("");
       setSuccess(true);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+
+      setTimeout(() => {
+        setSuccess(false);
+        onClose?.();
+      }, 1000);
 
     } catch (err) {
-      console.error("Error creating record:", err);
-      setError(err.message || "Failed to create record. Please try again.");
+      console.error(err);
+      setError(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleClear = () => {
-    setTitle("");
-    setContent("");
-    setCategory("");
-    setError("");
-    setSuccess(false);
   };
 
   return (

@@ -7,7 +7,7 @@ import WeeklySummaryModal from "../assets/Summary/weeklySummaryModal";
 import MonthlySummaryModal from "../assets/Summary/monthlySummaryModal";
 import CreateDropDown from "./CreateDropDown";
 import CreateFolderModal from "../assets/Folder/CreateFolderModal";
-import { CreateRecordModal } from "../assets/Record/CreateRecordModal";
+import  CreateRecordModal  from "../assets/Record/CreateRecordModal";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -66,9 +66,12 @@ export function Dashboard() {
       const foldersRes = await fetch(`${API_BASE_URL}/folder`);
       if (foldersRes.ok) {
         const foldersText = await foldersRes.text();
-        const foldersData = foldersText ? JSON.parse(foldersText) : [];
-        setFolders(foldersData);
+        const foldersData = foldersText ? JSON.parse(foldersText) : {};
+
+        // ✅ Make sure we set an array
+        setFolders(Array.isArray(foldersData.folders) ? foldersData.folders : []);
       }
+
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
