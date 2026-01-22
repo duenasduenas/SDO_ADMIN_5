@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { FileText, FolderOpen, Calendar, Clock, Search, Plus, Trash2, Eye, MoreVertical } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SummaryDropdown from "./SummaryDropDown";
+import EditRecordModal from "../assets/Record/EditRecordModal";
+import WeeklySummaryModal from "../assets/Summary/weeklySummaryModal";
+import MonthlySummaryModal from "../assets/Summary/monthlySummaryModal";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -16,7 +19,22 @@ export function Dashboard() {
   const [availableRecords, setAvailableRecords] = useState([]);
   const [searchRecordQuery, setSearchRecordQuery] = useState("");
   const [addingRecord, setAddingRecord] = useState(false);
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [recordToEdit, setRecordToEdit] = useState(null);
+
+  const [showWeeklyModal, setShowWeeklyModal] = useState(false);
+  const [showMonthlyModal, setShowMonthlyModal] = useState(false)
+  const [weeklyRecords, setWeeklyRecords] = useState([]);
+  const [monthlyRecords, setMonthlyRecords] = useState([])
+
+  const categories = [
+    ...new Set(records.map(r => r.category).filter(Boolean))
+  ];
+
+
   const [addRecordError, setAddRecordError] = useState("");
+  const navigate = useNavigate()
   const [view, setView] = useState("all"); // "all", "records", "folders"
 
   const API_BASE_URL = 'http://localhost:5001/api';
@@ -67,6 +85,24 @@ export function Dashboard() {
     }
   };
 
+  const openEditRecord = (record) => {
+    setRecordToEdit(record);
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = (updatedRecord) => {
+  setRecords(prev =>
+    prev.map(r => (r._id === updatedRecord._id ? updatedRecord : r))
+  );
+
+  // also update selectedRecord if it's open
+  setSelectedRecord(prev =>
+      prev && prev._id === updatedRecord._id ? updatedRecord : prev
+    );
+  };
+
+
+
   const deleteFolder = async (id) => {
     if (!confirm("Are you sure you want to delete this folder?")) return;
 
@@ -116,6 +152,8 @@ export function Dashboard() {
     const recordsInFolder = folderRecords.map(r => r._id);
     setAvailableRecords(records.filter(r => !recordsInFolder.includes(r._id)));
   };
+
+
 
   const addRecordToFolder = async (recordId) => {
     if (!selectedFolder) return;
@@ -183,25 +221,47 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+          
+          {/* Top Row */}
+          <div className="flex items-center justify-between">
+            
+            {/* Left: Title */}
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-600" />
               <h1 className="text-2xl font-normal text-gray-800">My Drive</h1>
             </div>
-            <button
-              onClick={() => window.location.href = '/create-record'}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              <Plus className="w-4 h-4" />
-              New
-            </button>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.location.href = '/create-record'}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                <Plus className="w-4 h-4" />
+                New
+              </button>
+
+              <button
+                onClick={() => setShowWeeklyModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              >
+                Weekly Summary
+              </button>
+
+              <button
+                onClick={() => setShowMonthlyModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Monthly Summary
+              </button>
+            </div>
           </div>
 
           {/* Search Bar */}
-          <div className="relative">
-            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          <div className="relative mt-4">
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search in Drive"
@@ -210,8 +270,10 @@ export function Dashboard() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
         </div>
       </div>
+
 
       {/* View Tabs */}
       <div className="max-w-7xl mx-auto px-6 pt-4">
@@ -459,6 +521,14 @@ export function Dashboard() {
                 <Trash2 className="w-4 h-4" />
                 Delete
               </button>
+
+              <button
+              onClick={() => openEditRecord(selectedRecord)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              Edit
+            </button>
+
             </div>
           </div>
         </div>
@@ -694,6 +764,35 @@ export function Dashboard() {
           </div>
         </div>
       )}
+
+      
+
+      {/* Edit Record Modal */}
+      <EditRecordModal
+        record={recordToEdit}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleEditSave}
+        apiBaseUrl={API_BASE_URL}
+        categories={categories}
+      />
+
+      {/* Weekly Summary Modal */}
+      <WeeklySummaryModal
+        isOpen={showWeeklyModal}
+        onClose={() => setShowWeeklyModal(false)}
+        apiBaseUrl={API_BASE_URL}
+        onResult={setWeeklyRecords}
+      />
+
+      <MonthlySummaryModal
+        isOpen={showMonthlyModal}
+        onClose={() => setShowMonthlyModal(false)}
+        apiBaseUrl={API_BASE_URL}
+        onResult={setMonthlyRecords}
+      />
+
+      
     </div>
   );
 }

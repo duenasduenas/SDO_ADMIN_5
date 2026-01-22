@@ -17,20 +17,34 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
   const week = getWeekNumber(today);
 
   const fetchSummary = async (type) => {
-    let url = "";
+    try {
+      let url = "";
 
-    if (type === "day") {
-      url = `${apiBaseUrl}/record/day-record/${year}/${month}/${day}`;
-    } else if (type === "week") {
-      url = `${apiBaseUrl}/record/week-record/${year}/${week}`;
-    } else if (type === "month") {
-      url = `${apiBaseUrl}/record/month-record/${year}/${month}`;
+      if (type === "day") {
+        url = `${apiBaseUrl}/record/day-record/${year}/${month}/${day}`;
+      } else if (type === "week") {
+        url = `${apiBaseUrl}/record/week-record/${year}/${week}`;
+      } else if (type === "month") {
+        url = `${apiBaseUrl}/record/month-record/${year}/${month}`;
+      } else if (type === "all") {
+        url = `${apiBaseUrl}/record/`;
+      }
+
+      console.log("Fetching from:", url); // Debug log
+      const res = await fetch(url);
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log("Received data:", data); // Debug log
+      onResult(data.records || data || []); // Handle different response formats
+      setOpen(false);
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+      setOpen(false);
     }
-
-    const res = await fetch(url);
-    const data = await res.json();
-    onResult(data.records || []);
-    setOpen(false);
   };
 
   return (
@@ -46,7 +60,7 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
           transition
         "
       >
-        Summary
+        Sort By
       </button>
 
       {open && (
@@ -74,6 +88,13 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
           >
             Monthly
+          </button>
+
+          <button
+            onClick={() => fetchSummary("all")}
+            className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+          >
+            All
           </button>
         </div>
       )}
