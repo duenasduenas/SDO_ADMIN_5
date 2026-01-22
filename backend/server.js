@@ -4,6 +4,7 @@ import http from "http";
 import recordRoutes from '../backend/src/routes/recordRoutes.js'
 import folderRoutes from '../backend/src/routes/folderRoutes.js'
 import aiRoutes from '../backend/src/routes/aiRoutes.js'
+import categoryRoutes from '../backend/src/routes/categoryRoutes.js'
 
 import { connectDB } from '../backend/src/cofig/db.js'
 import dotenv from "dotenv"
@@ -32,6 +33,7 @@ app.use(express.json());
 // 3. Then routes
 app.use('/api/record', recordRoutes);
 app.use('/api/folder', folderRoutes);
+app.use("/api/category", categoryRoutes);
 app.use('/api/ai', aiRoutes);
 
 

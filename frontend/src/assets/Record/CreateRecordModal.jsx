@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader } from "lucide-react";
 
-export default function CreateRecordModal({ isOpen, onClose, onSuccess, apiBaseUrl = "http://localhost:5001/api" }) {
+export default function CreateRecordModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  apiBaseUrl = "http://localhost:5001/api"
+}) {
   const [folders, setFolders] = useState([]);
-  const [categories, setCategories] = useState([]);  // New: For existing categories
+  const [categories, setCategories] = useState([]);
+
   const [selectedFolderId, setSelectedFolderId] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");  // New: For selected existing category
-  const [newCategoryName, setNewCategoryName] = useState("");  // New: For new category input
+  const [selectedCategoryId, setSelectedCategoryId] = useState(""); // now store category _id
+  const [newCategoryName, setNewCategoryName] = useState("");
 
   const [recordTitle, setRecordTitle] = useState("");
   const [recordContent, setRecordContent] = useState("");
@@ -16,28 +22,26 @@ export default function CreateRecordModal({ isOpen, onClose, onSuccess, apiBaseU
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Fetch existing folders and categories when modal opens
-  // In CreateRecordModal.jsx
-    // In CreateRecordModal.jsx
+  // Fetch folders and categories
   useEffect(() => {
     if (!isOpen) return;
 
     const fetchData = async () => {
       try {
-        // Fetch folders (unchanged)
+        // Folders
         const folderRes = await fetch(`${apiBaseUrl}/folder`);
-        if (!folderRes.ok) throw new Error("Failed to fetch folders");
+        if (!folderRes.ok) throw new Error(await folderRes.text());
         const folderData = await folderRes.json();
         setFolders(Array.isArray(folderData.folders) ? folderData.folders : []);
 
-        // Fetch categories from /record (instead of /record/categories)
-        const recordRes = await fetch(`${apiBaseUrl}/record`);
-        if (!recordRes.ok) throw new Error("Failed to fetch records and categories");
-        const data = await recordRes.json();
-        setCategories(Array.isArray(data.categories) ? data.categories : []);
+        // Categories
+        const catRes = await fetch(`${apiBaseUrl}/category`);
+        if (!catRes.ok) throw new Error(await catRes.text());
+        const catData = await catRes.json();
+        setCategories(Array.isArray(catData.categories) ? catData.categories : []);
       } catch (err) {
-        console.error(err);
-        setError(err.message);
+        console.error("Fetch error:", err);
+        setError(err.message || "Failed to fetch folders or categories");
       }
     };
 
@@ -49,60 +53,79 @@ export default function CreateRecordModal({ isOpen, onClose, onSuccess, apiBaseU
     setError("");
 
     try {
-      // Validate record fields
       if (!recordTitle.trim() || !recordContent.trim()) {
         throw new Error("Please fill in title and content");
       }
 
-      // Determine category (use selected or new)
-      const category = selectedCategory || newCategoryName.trim();
-      if (!category) {
-        throw new Error("Please select or enter a category");
+      let categoryId = selectedCategoryId;
+      // If creating a new category
+      if (!categoryId && newCategoryName.trim()) {
+        const catRes = await fetch(`${apiBaseUrl}/category/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newCategoryName.trim() })
+        });
+        if (!catRes.ok) {
+          const text = await catRes.text();
+          throw new Error(`Failed to create category: ${text}`);
+        }
+        const newCat = await catRes.json();
+        categoryId = newCat._id; // Use the ObjectId returned by backend
       }
 
-      // Create record
+      if (!categoryId) {
+        throw new Error("Please select or create a category");
+      }
+
+      // Create the record
       const recordRes = await fetch(`${apiBaseUrl}/record/create-record`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: recordTitle, category, content: recordContent }),
+        body: JSON.stringify({
+          title: recordTitle,
+          content: recordContent,
+          category: categoryId
+        })
       });
 
-      const recordData = await recordRes.json();
-      if (!recordRes.ok) throw new Error(recordData.message || "Failed to create record");
-      const newRecord = recordData;
+      if (!recordRes.ok) {
+        const text = await recordRes.text();
+        throw new Error(`Failed to create record: ${text}`);
+      }
 
-      // Determine folder ID (optional)
-      let folderId = null;
-      if (selectedFolderId) {
-        folderId = selectedFolderId;
-      } else if (newFolderName.trim()) {
+      const newRecord = await recordRes.json();
+
+      // Handle folder
+      let folderId = selectedFolderId;
+      if (!folderId && newFolderName.trim()) {
         const folderRes = await fetch(`${apiBaseUrl}/folder/create-folder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: newFolderName }),
+          body: JSON.stringify({ name: newFolderName.trim() })
         });
-
-        const folderData = await folderRes.json();
-        if (!folderRes.ok) throw new Error(folderData.message || "Failed to create folder");
-        folderId = folderData._id;
+        if (!folderRes.ok) {
+          const text = await folderRes.text();
+          throw new Error(`Failed to create folder: ${text}`);
+        }
+        const newFolder = await folderRes.json();
+        folderId = newFolder._id;
       }
 
-      // If a folder is specified, add record to it
       if (folderId) {
         const addRes = await fetch(`${apiBaseUrl}/folder/create-record/${folderId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recordId: newRecord._id }),
+          body: JSON.stringify({ recordId: newRecord._id })
         });
-
-        const addData = await addRes.json();
-        if (!addRes.ok) throw new Error(addData.message || "Failed to add record to folder");
+        if (!addRes.ok) {
+          const text = await addRes.text();
+          throw new Error(`Failed to add record to folder: ${text}`);
+        }
       }
 
-      // Success
       setSelectedFolderId("");
       setNewFolderName("");
-      setSelectedCategory("");
+      setSelectedCategoryId("");
       setNewCategoryName("");
       setRecordTitle("");
       setRecordContent("");
@@ -139,71 +162,71 @@ export default function CreateRecordModal({ isOpen, onClose, onSuccess, apiBaseU
           {error && <p className="text-red-600 text-sm">{error}</p>}
           {success && <p className="text-green-600 text-sm">Record created successfully!</p>}
 
-          {/* Select existing category (optional) */}
+          {/* Select existing category */}
           <select
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              if (e.target.value) setNewCategoryName("");  // Clear new category if selecting existing
+            value={selectedCategoryId}
+            onChange={e => {
+              setSelectedCategoryId(e.target.value);
+              if (e.target.value) setNewCategoryName("");
             }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">-- Select Existing Category (Optional) --</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value="">-- Select Existing Category --</option>
+            {categories.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
           </select>
 
           <p className="text-center text-gray-400 text-sm">OR</p>
 
-          {/* New category input (optional) */}
           <input
             type="text"
-            placeholder="New Category Name (Optional)"
+            placeholder="New Category Name"
             value={newCategoryName}
-            onChange={(e) => {
+            onChange={e => {
               setNewCategoryName(e.target.value);
-              if (e.target.value) setSelectedCategory("");  // Clear selected category if typing new
+              if (e.target.value) setSelectedCategoryId("");
             }}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <hr className="my-2 border-gray-200" />
 
-          {/* Select existing folder (optional) */}
+          {/* Folders */}
           <select
             value={selectedFolderId}
-            onChange={(e) => setSelectedFolderId(e.target.value)}
+            onChange={e => setSelectedFolderId(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">-- Select Existing Folder (Optional) --</option>
-            {folders.map(f => <option key={f._id} value={f._id}>{f.name}</option>)}
+            <option value="">-- Select Existing Folder --</option>
+            {folders.map(f => (
+              <option key={f._id} value={f._id}>{f.name}</option>
+            ))}
           </select>
 
           <p className="text-center text-gray-400 text-sm">OR</p>
 
-          {/* New folder input (optional) */}
           <input
             type="text"
-            placeholder="New Folder Name (Optional)"
+            placeholder="New Folder Name"
             value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
+            onChange={e => setNewFolderName(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
-          <hr className="my-2 border-gray-200" />
-
-          {/* Record fields (required) */}
+          {/* Record fields */}
           <input
             type="text"
             placeholder="Record Title"
             value={recordTitle}
-            onChange={(e) => setRecordTitle(e.target.value)}
+            onChange={e => setRecordTitle(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <textarea
             rows={4}
             placeholder="Record Content"
             value={recordContent}
-            onChange={(e) => setRecordContent(e.target.value)}
+            onChange={e => setRecordContent(e.target.value)}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
         </div>

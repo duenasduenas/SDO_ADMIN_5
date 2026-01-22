@@ -1,27 +1,30 @@
-import { useState } from "react";
+// DeleteCategoryButton.jsx
+import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 
-export default function DeleteCategoryButton({ categoryName, categories, setCategories, apiBaseUrl }) {
+export default function DeleteCategoryButton({ categoryId, categoryName, apiBaseUrl, onDeleted }) {
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(`Delete category "${categoryName}"?`)) return;
+    if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) return;
 
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetch(`${apiBaseUrl}/category/${categoryName}`, {
-        method: "DELETE"
+      const response = await fetch(`${apiBaseUrl}/category/${categoryId}`, {
+        method: "DELETE",
       });
 
-      if (res.ok) {
-        setCategories(categories.filter(c => c !== categoryName));
-      } else {
-        const data = await res.json();
-        alert(data.message || "Failed to delete category");
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Cannot delete category");
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting category");
+
+      onDeleted(categoryId); // update parent state
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      alert("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -31,7 +34,7 @@ export default function DeleteCategoryButton({ categoryName, categories, setCate
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="flex items-center gap-1 p-1 text-red-600 hover:bg-red-100 rounded"
+      className="p-2 hover:bg-gray-200 rounded flex items-center gap-1 text-red-600"
     >
       <Trash2 className="w-4 h-4" />
       {loading ? "Deleting..." : "Delete"}

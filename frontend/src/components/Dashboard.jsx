@@ -9,6 +9,7 @@ import CreateDropDown from "./CreateDropDown";
 import CreateFolderModal from "../assets/Folder/CreateFolderModal";
 import  CreateRecordModal  from "../assets/Record/CreateRecordModal";
 import DeleteFolderButton from "./DeleteFolderButton";
+import DeleteCategoryButton from "./DeleteCategoryButton";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -37,14 +38,20 @@ export function Dashboard() {
   const [showCreateFolder, setShowCreateFolder] = useState(false)
   const [showCreateRecord, setShowCreateRecord] = useState(false)
 
-  const categories = [
-    ...new Set(records.map(r => r.category).filter(Boolean))
-  ];
+  const [categories, setCategories] = useState([]);
+
+  const [selectedCategory, setSelectedCategory] = useState(null); // null = all
 
 
   const [addRecordError, setAddRecordError] = useState("");
   const navigate = useNavigate()
   const [view, setView] = useState("all"); // "all", "records", "folders"
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // getMonth() is 0-indexed
+  const day = today.getDate();
+  const week = Math.ceil(day / 7); // simple week calculation
 
   const API_BASE_URL = 'http://localhost:5001/api';
 
@@ -74,12 +81,29 @@ export function Dashboard() {
         setFolders(Array.isArray(foldersData.folders) ? foldersData.folders : []);
       }
 
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+     
+      try {
+        const categoriesRes = await fetch(`${API_BASE_URL}/category`);
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json(); // expects { categories: [...] }
+          setCategories(categoriesData.categories || []);
+        } else {
+          console.error("Failed to fetch categories:", categoriesRes.statusText);
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+
+
+
+
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const deleteRecord = async (id) => {
     if (!confirm("Are you sure you want to delete this record?")) return;
@@ -283,10 +307,11 @@ export function Dashboard() {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
         </div>
       </div>
 
+      {/* Categories Panel */}
+          
 
       {/* View Tabs */}
       <div className="max-w-7xl mx-auto px-6 pt-4">
@@ -321,18 +346,33 @@ export function Dashboard() {
           >
             Folders
           </button>
+          <button
+            onClick={() => setView("categories")}
+            className={`px-4 py-2 text-sm font-medium transition ${
+              view === "categories"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Categories
+          </button>
 
           <SummaryDropdown
             apiBaseUrl={API_BASE_URL}
+            categories={categories}
+            year={year}
+            month={month}
+            day={day}
+            week={week}
+            onDeleteCategory={(deletedId) => setCategories(prev => prev.filter(c => c._id !== deletedId))}
             onResult={(summaryRecords) => {
               setRecords(summaryRecords);
-              setView("records"); // auto-switch to records view
+              setView("records");
             }}
           />
-
-
         </div>
       </div>
+
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-6">
@@ -393,6 +433,57 @@ export function Dashboard() {
             </div>
           ))}
 
+          {view === "categories" && (
+            <div className="bg-white rounded-lg border border-gray-200 mt-4 overflow-hidden">
+              <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-sm font-medium text-gray-600">
+                <div className="col-span-10">Category Name</div>
+                <div className="col-span-2 text-right">Actions</div>
+              </div>
+
+              <div className="divide-y divide-gray-200">
+                {categories.length > 0 ? (
+                  categories.map((category) => (
+                    <div
+                      key={category._id}
+                      className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50"
+                    >
+                      <div className="col-span-10 text-gray-900">{category.name}</div>
+                      <div className="col-span-2 flex justify-end gap-2">
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete category "${category.name}"?`)) return;
+                            try {
+                              const res = await fetch(`${API_BASE_URL}/category/${category._id}`, {
+                                method: "DELETE",
+                              });
+                              if (res.ok) {
+                                setCategories((prev) =>
+                                  prev.filter((c) => c._id !== category._id)
+                                );
+                              } else {
+                                console.error("Failed to delete category");
+                              }
+                            } catch (error) {
+                              console.error(error);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-6 py-8 text-center text-gray-500">
+                    No categories found
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
 
               {/* Records */}
               {(view === "all" || view === "records") && filteredRecords.map((record) => (
@@ -405,7 +496,7 @@ export function Dashboard() {
                     <FileText className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     <span className="font-medium text-gray-900 truncate">{record.title}</span>
                   </div>
-                  <div className="col-span-2 text-sm text-gray-600">{record.category}</div>
+                  <div className="col-span-2 text-sm text-gray-600">{record.category?.name || "Uncategorized"}</div>
                   <div className="col-span-2 text-sm text-gray-600">
                     {formatDate(record.createdAt)}
                   </div>

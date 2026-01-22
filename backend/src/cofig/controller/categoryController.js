@@ -1,47 +1,35 @@
-// categoryController.js
-import Category from "../models/Category.js";
+import Category from "../../models/Category.js";
 
-// export async function deleteCategory(req, res) {
-//   const categoryId = req.params.id;
-
-//   if (!categoryId) {
-//     return res.status(400).json({ message: "Category ID is required" });
-//   }
-
-//   try {
-//     const category = await Category.findById(categoryId);
-//     if (!category) {
-//       return res.status(404).json({ message: "Category not found" });
-//     }
-
-//     await Category.deleteOne({ _id: categoryId });
-
-//     res.status(200).json({ message: "Category deleted successfully", id: categoryId });
-//   } catch (err) {
-//     console.error("Delete Category Error:", err);
-//     res.status(500).json({ message: "Failed to delete category" });
-//   }
-// }
-
-// Delete category by name (or _id if you store objects)
-export async function deleteCategory(req, res) {
+export const getAllCategories = async (req, res) => {
   try {
-    const { categoryName } = req.params;
+    const categories = await Category.find();
+    res.status(200).json({ categories });  // MUST be { categories: [...] }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch categories" });
+  }
+}
 
-    // Example if you store categories as strings in your DB
-    // Remove the category from your categories collection
-    const result = await Category.updateOne(
-      {}, // adjust your query
-      { $pull: { categories: categoryName } }
-    );
-
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-
-    res.status(200).json({ message: "Category deleted successfully" });
-  } catch (err) {
-    console.error(err);
+// Delete a category
+export const deleteCategory = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await Category.findByIdAndDelete(id);
+    res.status(200).json({ message: "Category deleted" });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Failed to delete category" });
+  }
+};
+
+export async function createCategory(req, res) { 
+    try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: "Name required" });
+    const category = new Category({ name });
+    await category.save();
+    res.status(201).json(category);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 }

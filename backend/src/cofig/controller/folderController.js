@@ -6,7 +6,7 @@ import path from 'path';
 
 export async function getAllFolders(req, res) {
   try {
-    const folders = await Folder.find().populate('record'); // populate record if you want count/details
+    const folders = await Folder.find().populate('records'); // populate record if you want count/details
     res.status(200).json({ folders }); // <-- must send { folders: [...] }
   } catch (err) {
     console.error(err);

@@ -108,40 +108,44 @@ export default function EditRecordModal({
               </label>
 
               <select
-                value={categories.includes(editForm.category) ? editForm.category : "custom"}
+                value={editForm.category?._id || "custom"}
                 onChange={(e) => {
                   if (e.target.value === "custom") {
-                    setEditForm({ ...editForm, category: "" });
+                    // User wants to add a new category
+                    setEditForm({ ...editForm, category: { name: "" } });
                   } else {
-                    setEditForm({ ...editForm, category: e.target.value });
+                    // Find selected category object by _id
+                    const selected = categories.find((c) => c._id === e.target.value);
+                    setEditForm({ ...editForm, category: selected || { name: "" } });
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select category</option>
+                <option value="custom">➕ Add new category</option>
                 {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
                   </option>
                 ))}
-                <option value="custom">➕ Add new category</option>
               </select>
 
-              {(!categories.includes(editForm.category) || editForm.category === "") && (
+              {/* Input for new category */}
+              {(!editForm.category?._id || editForm.category.name === "") && (
                 <input
                   type="text"
                   placeholder="Enter new category"
-                  value={editForm.category}
+                  value={editForm.category?.name || ""}
                   onChange={(e) =>
                     setEditForm({
                       ...editForm,
-                      category: e.target.value
+                      category: { name: e.target.value }
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               )}
             </div>
+
 
             {/* Content */}
             <div>

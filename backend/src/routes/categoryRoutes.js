@@ -1,8 +1,10 @@
 import express from "express";
-import { deleteCategory } from "../controllers/categoryController.js";
+import { getAllCategories, deleteCategory, createCategory } from "../cofig/controller/categoryController.js";
 
 const router = express.Router();
 
-router.delete("/:id", deleteCategory);  // DELETE /api/category/:id
+router.get("/", getAllCategories);
+router.delete("/:id", deleteCategory);
+router.post("/create", createCategory);
 
 export default router;
