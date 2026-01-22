@@ -42,8 +42,8 @@ export default function SummaryDropdown({ apiBaseUrl, onResult }) {
       onResult(data.records || data || []); // Handle different response formats
       setOpen(false);
     } catch (error) {
-      console.error("Error fetching summary:", error);
-      setOpen(false);
+        console.error("Error fetching summary:", error);
+        setOpen(false);
     }
   };
 

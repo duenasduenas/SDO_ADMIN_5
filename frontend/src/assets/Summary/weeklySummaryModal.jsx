@@ -12,6 +12,16 @@ export default function WeeklySummaryModal({
   const [weeklyRecords, setWeeklyRecords] = useState([]);
   const [summary, setSummary] = useState(null);
 
+  // ✅ Calculate ISO week number from date
+  const getWeekNumber = (date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return weekNo;
+  };
+
   // ✅ summary generator (now includes ALL categories AND records by day)
   const generateWeeklySummary = (records) => {
     if (!records.length) return null;
@@ -30,9 +40,14 @@ export default function WeeklySummaryModal({
       
       // Group records by day
       if (!recordsByDay[day]) {
-        recordsByDay[day] = { date: fullDate, records: [] };
+        recordsByDay[day] = { date: fullDate, records: [], categories: {} };
       }
       recordsByDay[day].records.push(r);
+      
+      // Track categories per day
+      if (r.category) {
+        recordsByDay[day].categories[r.category] = (recordsByDay[day].categories[r.category] || 0) + 1;
+      }
 
       if (r.category) {
         categories[r.category] = (categories[r.category] || 0) + 1;
@@ -54,8 +69,14 @@ export default function WeeklySummaryModal({
       .filter(day => recordsByDay[day])
       .map(day => ({ day, ...recordsByDay[day] }));
 
+    // Calculate week number from first record
+    const weekNumber = sortedByTime.length > 0 
+      ? (sortedByTime[0].dateInfo.weekNumber || getWeekNumber(sortedByTime[0].dateInfo.fullDate))
+      : null;
+
     return {
       totalRecords: total,
+      weekNumber: weekNumber,
       dateRange: `${sortedByTime[0].dateInfo.fullDate} – ${sortedByTime.at(-1).dateInfo.fullDate}`,
       mostActiveDay: mostActiveDay
         ? `${mostActiveDay[0]} (${mostActiveDay[1]} records)`
@@ -83,7 +104,12 @@ export default function WeeklySummaryModal({
       const data = await res.json();
 
       setWeeklyRecords(data.records);
-      setSummary(generateWeeklySummary(data.records));
+      const summaryData = generateWeeklySummary(data.records);
+      // Use the inputted week number instead of calculated one
+      if (summaryData) {
+        summaryData.weekNumber = week;
+      }
+      setSummary(summaryData);
     } catch (err) {
       console.error("Failed to fetch weekly records", err);
     } finally {
@@ -137,9 +163,18 @@ export default function WeeklySummaryModal({
         {summary && (
           <div className="mt-6 flex-1 overflow-y-auto">
             <div className="space-y-3 text-sm bg-gray-50 p-4 rounded-lg">
+              {/* Week Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg">
+                <h3 className="text-lg font-bold">
+                  Week {summary.weekNumber} - {year}
+                </h3>
+                <p className="text-blue-100 text-sm">
+                  {summary.totalRecords} total records
+                </p>
+              </div>
+
               {/* Summary Stats */}
               <div className="bg-white p-3 rounded border">
-                <p><strong>Total Records:</strong> {summary.totalRecords}</p>
                 <p><strong>Date Range:</strong> {summary.dateRange}</p>
                 <p><strong>Most Active Day:</strong> {summary.mostActiveDay}</p>
               </div>
@@ -177,7 +212,7 @@ export default function WeeklySummaryModal({
                 <strong className="block mb-3">Records by Day:</strong>
                 {summary.recordsByDay && summary.recordsByDay.length > 0 ? (
                   <div className="space-y-3">
-                    {summary.recordsByDay.map(({ day, date, records }) => (
+                    {summary.recordsByDay.map(({ day, date, records, categories }) => (
                       <div key={day} className="p-3 bg-blue-50 rounded border-l-4 border-blue-500">
                         <p className="font-semibold text-blue-700 mb-2">
                           {day}, {date}
@@ -185,6 +220,18 @@ export default function WeeklySummaryModal({
                             ({records.length} record{records.length !== 1 ? 's' : ''})
                           </span>
                         </p>
+                        
+                        {/* Category breakdown for this day */}
+                        {Object.keys(categories).length > 0 && (
+                          <div className="mb-2 text-sm">
+                            {Object.entries(categories).map(([cat, count]) => (
+                              <span key={cat} className="inline-block mr-2 mb-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                {cat} ({count})
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="space-y-1.5">
                           {records.map((record, idx) => (
                             <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-blue-300 bg-white rounded">

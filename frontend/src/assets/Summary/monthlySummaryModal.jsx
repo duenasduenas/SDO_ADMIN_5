@@ -42,9 +42,14 @@ export default function MonthlySummaryModal({
       
       // Group records by full date
       if (!recordsByDate[fullDate]) {
-        recordsByDate[fullDate] = { day, records: [] };
+        recordsByDate[fullDate] = { day, records: [], categories: {} };
       }
       recordsByDate[fullDate].records.push(r);
+      
+      // Track categories per date
+      if (r.category) {
+        recordsByDate[fullDate].categories[r.category] = (recordsByDate[fullDate].categories[r.category] || 0) + 1;
+      }
 
       // Calculate week number from date
       const weekNum = r.dateInfo.weekNumber || getWeekNumber(fullDate);
@@ -273,7 +278,7 @@ export default function MonthlySummaryModal({
                 <strong className="block mb-3">Records by Date:</strong>
                 {summary.recordsByDate && summary.recordsByDate.length > 0 ? (
                   <div className="space-y-3">
-                    {summary.recordsByDate.map(({ date, day, records }) => (
+                    {summary.recordsByDate.map(({ date, day, records, categories }) => (
                       <div key={date} className="p-3 bg-green-50 rounded border-l-4 border-green-500">
                         <p className="font-semibold text-green-700 mb-2">
                           {day}, {date}
@@ -281,6 +286,18 @@ export default function MonthlySummaryModal({
                             ({records.length} record{records.length !== 1 ? 's' : ''})
                           </span>
                         </p>
+                        
+                        {/* Category breakdown for this date */}
+                        {Object.keys(categories).length > 0 && (
+                          <div className="mb-2 text-sm">
+                            {Object.entries(categories).map(([cat, count]) => (
+                              <span key={cat} className="inline-block mr-2 mb-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                                {cat} ({count})
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="space-y-1.5">
                           {records.map((record, idx) => (
                             <div key={idx} className="text-sm pl-3 py-1 border-l-2 border-green-300 bg-white rounded">

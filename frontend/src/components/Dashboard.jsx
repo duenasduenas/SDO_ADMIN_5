@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { FileText, FolderOpen, Calendar, Clock, Search, Plus, Trash2, Eye, MoreVertical } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import SummaryDropdown from "./SummaryDropDown";
 import EditRecordModal from "../assets/Record/EditRecordModal";
 import WeeklySummaryModal from "../assets/Summary/weeklySummaryModal";
 import MonthlySummaryModal from "../assets/Summary/monthlySummaryModal";
+import CreateDropDown from "./CreateDropDown";
+import CreateFolderModal from "../assets/Folder/CreateFolderModal";
+import { CreateRecordModal } from "../assets/Record/CreateRecordModal";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -23,10 +26,15 @@ export function Dashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [recordToEdit, setRecordToEdit] = useState(null);
 
+  const apiBaseUrl = "http://localhost:5001/api"; // or your API URL
+
   const [showWeeklyModal, setShowWeeklyModal] = useState(false);
   const [showMonthlyModal, setShowMonthlyModal] = useState(false)
   const [weeklyRecords, setWeeklyRecords] = useState([]);
   const [monthlyRecords, setMonthlyRecords] = useState([])
+
+  const [showCreateFolder, setShowCreateFolder] = useState(false)
+  const [showCreateRecord, setShowCreateRecord] = useState(false)
 
   const categories = [
     ...new Set(records.map(r => r.category).filter(Boolean))
@@ -235,13 +243,13 @@ export function Dashboard() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => window.location.href = '/create-record'}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              >
-                <Plus className="w-4 h-4" />
-                New
-              </button>
+              <CreateDropDown 
+                onSelect={(type) => {
+                  if (type === "folder") setShowCreateFolder(true);
+                  if (type === "record") setShowCreateRecord(true);
+                }}
+              />
+
 
               <button
                 onClick={() => setShowWeeklyModal(true)}
@@ -791,6 +799,33 @@ export function Dashboard() {
         apiBaseUrl={API_BASE_URL}
         onResult={setMonthlyRecords}
       />
+
+      {/* Create Folder Modal */}
+      {showCreateFolder && (
+        <CreateFolderModal
+          isOpen={showCreateFolder}
+          onClose={() => setShowCreateFolder(false)}
+          onSuccess={(newFolder) => {
+            setFolders(prev => [...prev, newFolder]);
+            setShowCreateFolder(false);
+          }}
+        />
+      )}
+
+      {/* Create Record Modal */}
+      {showCreateRecord && (
+        <CreateRecordModal
+          isOpen={showCreateRecord}
+          onClose={() => setShowCreateRecord(false)}
+          onSuccess={(newRecord) => {
+            setRecords(prev => [...prev, newRecord]);
+            setShowCreateRecord(false);
+          }}
+          apiBaseUrl={API_BASE_URL}  // <<< ADD THIS
+        />
+      )}
+
+
 
       
     </div>
