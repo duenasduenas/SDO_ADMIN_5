@@ -7,13 +7,15 @@ export default function EditRecordModal({
   onClose,
   onSave,
   apiBaseUrl,
-  categories = [] // passed from parent
+  categories = [],
+  folders = [] // Add this prop from parent
 }) {
   const [editForm, setEditForm] = useState({
     title: "",
     content: "",
     image: "",
-    category: ""
+    category: "",
+    folder: "" // Add folder field
   });
   const [editError, setEditError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -24,7 +26,8 @@ export default function EditRecordModal({
         title: record.title || "",
         content: record.content || "",
         image: record.image || "",
-        category: record.category || ""
+        category: record.category || "",
+        folder: record.folder?._id || "" // Set initial folder if exists
       });
       setEditError("");
     }
@@ -40,10 +43,8 @@ export default function EditRecordModal({
 
     // Handle category
     if (editForm.category?._id) {
-      // Existing category selected
       categoryId = editForm.category._id;
     } else if (editForm.category?.name) {
-      // New category entered
       try {
         const res = await fetch(`${apiBaseUrl}/category/create`, {
           method: "POST",
@@ -75,7 +76,8 @@ export default function EditRecordModal({
             title: editForm.title,
             content: editForm.content,
             image: editForm.image,
-            category: categoryId
+            category: categoryId,
+            folder: editForm.folder || null // Include folder in request
           })
         }
       );
@@ -84,7 +86,13 @@ export default function EditRecordModal({
 
       const data = await response.json();
 
-      onSave({ ...record, ...editForm, category: { _id: categoryId } });
+      const selectedFolder = folders.find(f => f._id === editForm.folder);
+      onSave({ 
+        ...record, 
+        ...editForm, 
+        category: { _id: categoryId },
+        folder: selectedFolder || null
+      });
       onClose();
     } catch (error) {
       console.error("Error updating record:", error);
@@ -158,6 +166,21 @@ export default function EditRecordModal({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               )}
+            </div>
+
+            {/* Folder */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Folder (Optional)</label>
+              <select
+                value={editForm.folder}
+                onChange={(e) => setEditForm({ ...editForm, folder: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">No Folder</option>
+                {folders.map((folder) => (
+                  <option key={folder._id} value={folder._id}>{folder.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Content */}

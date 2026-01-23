@@ -9,7 +9,9 @@ import CreateDropDown from "./CreateDropDown";
 import CreateFolderModal from "../assets/Folder/CreateFolderModal";
 import  CreateRecordModal  from "../assets/Record/CreateRecordModal";
 import DeleteFolderButton from "./DeleteFolderButton";
-import DeleteCategoryButton from "./DeleteCategoryButton";
+import DeleteFolder from "../assets/Folder/DeleteFolder";
+import OpenFolder from "../assets/Folder/OpenFolder";
+import DarkModeModal from "./DarkModeModal";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -41,6 +43,8 @@ export function Dashboard() {
   const [categories, setCategories] = useState([]);
 
   const [selectedCategory, setSelectedCategory] = useState(null); // null = all
+
+  const [showYourModal, setShowYourModal] = useState(false);
 
 
   const [addRecordError, setAddRecordError] = useState("");
@@ -93,11 +97,7 @@ export function Dashboard() {
       } catch (error) {
         console.error("Failed to fetch categories:", error);
       }
-
-
-
-
-
+      
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -159,63 +159,6 @@ export function Dashboard() {
   };
 
 
-
-  const deleteFolder = async (id) => {
-    if (!confirm("Are you sure you want to delete this folder?")) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/folder/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setFolders(folders.filter(f => f._id !== id));
-        setSelectedFolder(null);
-      }
-    } catch (error) {
-      console.error("Error deleting folder:", error);
-    }
-  };
-
-  const openFolder = async (folder) => {
-    setSelectedFolder(folder);
-    setLoadingFolder(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/folder/${folder._id}`);
-      if (response.ok) {
-        const text = await response.text();
-        const data = text ? JSON.parse(text) : null;
-
-        console.log("Folder API Response:", data);
-        console.log("Folder records:", data?.folder?.records);
-        console.log("Folder record (singular):", data?.folder?.record);
-
-        // Check for both 'records' and 'record' (singular) due to potential database inconsistency
-        const recordsArray = data?.folder?.records || data?.folder?.record || [];
-        
-        if (Array.isArray(recordsArray) && recordsArray.length > 0) {
-          // Ensure each record has a valid _id
-          const normalizedRecords = recordsArray.map(r => ({
-            ...r,
-            _id: r._id || r.id, // fallback for missing _id
-          }));
-          console.log("Normalized records:", normalizedRecords);
-          setFolderRecords(normalizedRecords);
-        } else {
-          console.log("No records array found or data structure issue");
-          setFolderRecords([]);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching folder details:", error);
-      setFolderRecords([]);
-    } finally {
-      setLoadingFolder(false);
-    }
-  };
-
-
   const openAddRecordModal = () => {
     setShowAddRecordModal(true);
     setSearchRecordQuery("");
@@ -225,41 +168,6 @@ export function Dashboard() {
     setAvailableRecords(records.filter(r => !recordsInFolder.includes(r._id)));
   };
 
-
-
-  const addRecordToFolder = async (recordId) => {
-    if (!selectedFolder) return;
-
-    setAddingRecord(true);
-    setAddRecordError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/folder/create-record/${selectedFolder._id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ recordId })
-      });
-
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to add record');
-      }
-
-      // Refresh folder data
-      await openFolder(selectedFolder);
-      setShowAddRecordModal(false);
-      
-    } catch (error) {
-      console.error("Error adding record to folder:", error);
-      setAddRecordError(error.message || "Failed to add record to folder");
-    } finally {
-      setAddingRecord(false);
-    }
-  };
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -303,6 +211,17 @@ export function Dashboard() {
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-600" />
               <h1 className="text-2xl font-normal text-gray-800">My Drive</h1>
+              <DarkModeModal 
+                isOpen={showYourModal} 
+                onClose={() => setShowYourModal(false)}
+                title="Your Modal Title"
+                maxWidth="max-w-3xl"
+              >
+                {/* Your modal content goes here */}
+                <div className="space-y-4">
+                  <p>Modal content here</p>
+                </div>
+              </DarkModeModal>
             </div>
 
             {/* Right: Actions */}
@@ -430,43 +349,37 @@ export function Dashboard() {
               
             {/* Folders */}
             {(view === "all" || view === "folders") && filteredFolders.map((folder) => (
-            <div
-              key={folder._id}
-              className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer items-center"
-              onClick={() => openFolder(folder)}
-            >
-              <div className="col-span-6 flex items-center gap-3">
-                <FolderOpen className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                <span className="font-medium text-gray-900 truncate">{folder.name}</span>
-              </div>
-              <div className="col-span-2 text-sm text-gray-600">Folder</div>
-              <div className="col-span-2 text-sm text-gray-600">
-                {formatDate(folder.createdAt)}
-              </div>
-              <div className="col-span-2 flex justify-end gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openFolder(folder);
-                  }}
-                  className="p-2 hover:bg-gray-200 rounded"
-                >
-                  <Eye className="w-4 h-4 text-gray-500" />
-                </button>
+              <OpenFolder
+                key={folder._id}
+                folder={folder}
+                API_BASE_URL={API_BASE_URL}
+                onFolderOpen={(folder) => setSelectedFolder(folder)}
+                onRecordsLoaded={(records) => setFolderRecords(records)}
+              >
+                <div className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer items-center w-full">
+                  <div className="col-span-6 flex items-center gap-3">
+                    <FolderOpen className="w-5 h-5 text-yellow-500 shrink-0" />
+                    <span className="font-medium text-gray-900 truncate">{folder.name}</span>
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-600">Folder</div>
+                  <div className="col-span-2 text-sm text-gray-600">
+                    {formatDate(folder.createdAt)}
+                  </div>
+                  <div className="col-span-2 flex justify-end gap-2">
+                    <Eye className="w-4 h-4 text-gray-500" />
 
-                {/* Replace this button with DeleteFolderButton */}
-                <DeleteFolderButton
-                  folderId={folder._id}
-                  API_BASE_URL={API_BASE_URL}
-                  onDeleted={(id) => {
-                    // Update your folders state after deletion
-                    setFolders(prev => prev.filter(f => f._id !== id));
-                    setSelectedFolder(null);
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+                    <DeleteFolderButton
+                      folderId={folder._id}
+                      API_BASE_URL={API_BASE_URL}
+                      onDeleted={(id) => {
+                        setFolders(prev => prev.filter(f => f._id !== id));
+                        setSelectedFolder(null);
+                      }}
+                    />
+                  </div>
+                </div>
+              </OpenFolder>
+            ))}
 
           {view === "categories" && (
             <div className="bg-white rounded-lg border border-gray-200 mt-4 overflow-hidden">
@@ -750,14 +663,14 @@ export function Dashboard() {
                 ) : folderRecords.length > 0 ? (
                   <div className="space-y-2">
                     {folderRecords.map(record => (
-                  <div
-                    key={record._id}
-                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                    onClick={() => {
-                      setSelectedFolder(null);
-                      setSelectedRecord(record);
-                    }}
-                  >
+                      <div
+                        key={record._id}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedFolder(null);
+                          setSelectedRecord(record);
+                        }}
+                      >
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-blue-600" />
                       <div>
@@ -803,13 +716,13 @@ export function Dashboard() {
               >
                 Close
               </button>
-              <button
-                onClick={() => deleteFolder(selectedFolder._id)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Folder
-              </button>
+              <DeleteFolder
+                id={selectedFolder._id}
+                folders={folders}
+                setFolders={setFolders}
+                setSelectedFolder={setSelectedFolder}
+                API_BASE_URL={API_BASE_URL}
+              />
             </div>
           </div>
         </div>
@@ -856,48 +769,6 @@ export function Dashboard() {
                   />
                 </div>
               </div>
-
-              <div className="max-h-96 overflow-y-auto">
-                {filteredAvailableRecords.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">
-                      {searchRecordQuery 
-                        ? "No records found" 
-                        : "All records are already in this folder"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredAvailableRecords.map((record) => (
-                      <button
-                        key={record._id}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addRecordToFolder(record._id);
-                        }}
-                        disabled={addingRecord}
-                        className="w-full p-4 rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 text-left transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <div className="flex items-start gap-3">
-                          <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{record.title}</p>
-                            <p className="text-xs text-gray-500 line-clamp-2 mt-1">
-                              {record.content}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {formatDate(record.createdAt)}
-                            </p>
-                          </div>
-                          <Plus className="w-5 h-5 text-gray-400" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
@@ -912,8 +783,6 @@ export function Dashboard() {
         </div>
       )}
 
-      
-
       {/* Edit Record Modal */}
       <EditRecordModal
         record={recordToEdit}
@@ -922,6 +791,7 @@ export function Dashboard() {
         onSave={handleEditSave}
         apiBaseUrl={API_BASE_URL}
         categories={categories}
+        folders={folders}  // Add this line
       />
 
       {/* Weekly Summary Modal */}

@@ -119,10 +119,10 @@ export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
 
       // 5️⃣ AI summary
       try {
-        const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`,{
+        const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ period: "monthly", year, month, records })
+          body: JSON.stringify({ period: "monthly", records })
         });
         if (ragRes.ok) {
           const ragData = await ragRes.json();
@@ -207,47 +207,70 @@ export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
               ) : <p className="ml-5 italic">None</p>}
             </div>
 
-            {/* Categories */}
+            {/* Categories - Inline Format */}
             <div className="bg-white p-3 rounded border">
-              <strong>All Categories:</strong>
+              <strong>Categories Summary:</strong>
               {summary.allCategories?.length > 0 ? (
-                <ul className="list-disc ml-5 mt-1">
-                  {summary.allCategories.map(([id,count])=>(
-                    <li key={id}>{categoryNames[id] ?? id} ({count} records)</li>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {summary.allCategories.map(([id, count]) => (
+                    <span key={id} className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                      {categoryNames[id] ?? id} ({count})
+                    </span>
                   ))}
-                </ul>
-              ) : <p className="ml-5 italic">None</p>}
+                </div>
+              ) : <p className="ml-5 italic mt-2">None</p>}
             </div>
 
-            {/* Records by Week */}
-            {summary.recordsByWeek?.map(({ week, records }) => (
-              <div key={week} className="p-3 bg-purple-50 rounded border-l-4 border-purple-500 mb-3">
-                <p className="font-semibold text-purple-700 mb-2">
-                  Week {week} ({records?.length || 0} record{(records?.length || 0) !== 1 ? 's' : ''})
-                </p>
+            {/* Records by Date with inline Categories */}
+            {summary.recordsByDate?.map(({ date, day, records }) => {
+              // Calculate categories for this date
+              const dateCategoriesCount = {};
+              records.forEach(r => {
+                if (r.category) {
+                  const catId = typeof r.category === "string" ? r.category : r.category._id;
+                  dateCategoriesCount[catId] = (dateCategoriesCount[catId] || 0) + 1;
+                }
+              });
+              const sortedDateCategories = Object.entries(dateCategoriesCount).sort((a, b) => b[1] - a[1]);
 
-                {records?.map(r => (
-                  <div key={r._id ?? r.title} className="text-sm pl-3 py-1 border-l-2 border-purple-300 bg-white rounded mb-1">
-                    <span className="text-xs text-gray-500">
-                      {r.dateInfo?.fullDate ?? (r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "N/A")}
-                      ({r.dateInfo?.dayName ?? (r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US",{weekday:"long"}) : "N/A")})
-                    </span>
-                    <br/>
-                    <span className="font-medium text-gray-800">{r.title ?? "Untitled"}</span>
-                    {Array.isArray(r.folder) && r.folder.map(f=>(
-                      <span key={typeof f === "string" ? f : f._id} className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
-                        {typeof f === "string" ? folderNames[f] ?? f : f.name ?? f._id}
-                      </span>
+              return (
+                <div key={date} className="p-4 bg-blue-50 rounded border-l-4 border-blue-500 mb-3">
+                  <p className="font-semibold text-blue-700 mb-2">
+                    {day}, {date} ({records.length} record{records.length !== 1 ? 's' : ''})
+                  </p>
+                  
+                  {/* Inline Categories */}
+                  {sortedDateCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {sortedDateCategories.map(([catId, count]) => (
+                        <span key={catId} className="text-sm text-gray-700">
+                          {categoryNames[catId] ?? catId} ({count}){sortedDateCategories.indexOf([catId, count]) < sortedDateCategories.length - 1 ? '' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Records List */}
+                  <div className="space-y-1 mt-2">
+                    {records.map(r => (
+                      <div key={r._id ?? r.title} className="text-sm pl-3 py-1 border-l-2 border-blue-300 bg-white rounded">
+                        <span className="font-medium text-gray-800">{r.title ?? "Untitled"}</span>
+                        {Array.isArray(r.folder) && r.folder.map(f => (
+                          <span key={typeof f === "string" ? f : f._id} className="ml-2 text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                            {typeof f === "string" ? folderNames[f] ?? f : f.name ?? f._id}
+                          </span>
+                        ))}
+                        {r.category && (
+                          <span className="ml-2 text-xs px-2 py-0.5 bg-blue-200 text-blue-800 rounded">
+                            {typeof r.category === "string" ? categoryNames[r.category] ?? r.category : r.category?.name ?? r.category?._id}
+                          </span>
+                        )}
+                      </div>
                     ))}
-                    {r.category && (
-                      <span className="ml-2 text-xs px-2 py-0.5 bg-purple-200 text-purple-800 rounded">
-                        {typeof r.category === "string" ? categoryNames[r.category] ?? r.category : r.category?.name ?? r.category?._id}
-                      </span>
-                    )}
                   </div>
-                ))}
-              </div>
-            ))}
+                </div>
+              );
+            })}
 
           </div>
         ) : (

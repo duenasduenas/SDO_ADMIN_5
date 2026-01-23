@@ -134,7 +134,7 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
         const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ period: "weekly", year, week, records })
+          body: JSON.stringify({ period: "weekly", records })
         });
         if (ragRes.ok) {
           const ragData = await ragRes.json();
