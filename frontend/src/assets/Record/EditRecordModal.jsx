@@ -31,8 +31,34 @@ export default function EditRecordModal({
   }, [record]);
 
   const handleEditSubmit = async () => {
-    if (!editForm.title || !editForm.content || !editForm.category) {
-      setEditError("Title, Content, and Category are required");
+    if (!editForm.title || !editForm.content) {
+      setEditError("Title and Content are required");
+      return;
+    }
+
+    let categoryId = "";
+
+    // Handle category
+    if (editForm.category?._id) {
+      // Existing category selected
+      categoryId = editForm.category._id;
+    } else if (editForm.category?.name) {
+      // New category entered
+      try {
+        const res = await fetch(`${apiBaseUrl}/category/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: editForm.category.name })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to create category");
+        categoryId = data._id;
+      } catch (err) {
+        setEditError(err.message);
+        return;
+      }
+    } else {
+      setEditError("Please select or enter a category");
       return;
     }
 
@@ -45,7 +71,12 @@ export default function EditRecordModal({
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editForm)
+          body: JSON.stringify({
+            title: editForm.title,
+            content: editForm.content,
+            image: editForm.image,
+            category: categoryId
+          })
         }
       );
 
@@ -53,7 +84,7 @@ export default function EditRecordModal({
 
       const data = await response.json();
 
-      onSave({ ...record, ...editForm }); // send updated record to parent
+      onSave({ ...record, ...editForm, category: { _id: categoryId } });
       onClose();
     } catch (error) {
       console.error("Error updating record:", error);
@@ -71,9 +102,7 @@ export default function EditRecordModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
           <h2 className="text-xl font-medium text-gray-900">Edit Record</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
-            ×
-          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
         </div>
 
         {/* Body */}
@@ -90,9 +119,7 @@ export default function EditRecordModal({
           <div className="space-y-4">
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={editForm.title}
@@ -101,20 +128,15 @@ export default function EditRecordModal({
               />
             </div>
 
-            {/* Category dropdown + new input */}
+            {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category <span className="text-red-500">*</span>
-              </label>
-
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
               <select
                 value={editForm.category?._id || "custom"}
                 onChange={(e) => {
                   if (e.target.value === "custom") {
-                    // User wants to add a new category
                     setEditForm({ ...editForm, category: { name: "" } });
                   } else {
-                    // Find selected category object by _id
                     const selected = categories.find((c) => c._id === e.target.value);
                     setEditForm({ ...editForm, category: selected || { name: "" } });
                   }
@@ -123,35 +145,24 @@ export default function EditRecordModal({
               >
                 <option value="custom">➕ Add new category</option>
                 {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </option>
+                  <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>
 
-              {/* Input for new category */}
               {(!editForm.category?._id || editForm.category.name === "") && (
                 <input
                   type="text"
                   placeholder="Enter new category"
                   value={editForm.category?.name || ""}
-                  onChange={(e) =>
-                    setEditForm({
-                      ...editForm,
-                      category: { name: e.target.value }
-                    })
-                  }
+                  onChange={(e) => setEditForm({ ...editForm, category: { name: e.target.value } })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               )}
             </div>
 
-
             {/* Content */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Content <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Content <span className="text-red-500">*</span></label>
               <textarea
                 value={editForm.content}
                 onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}

@@ -106,21 +106,41 @@ export function Dashboard() {
     };
 
   const deleteRecord = async (id) => {
+    if (!id) {
+      console.error("Cannot delete: Record ID is missing");
+      console.log("Current records:", records);
+      console.log("Folder records:", folderRecords);
+      alert("Error: Cannot delete record - ID is missing");
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this record?")) return;
 
     try {
       const response = await fetch(`${API_BASE_URL}/record/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
 
       if (response.ok) {
-        setRecords(records.filter(r => r._id !== id));
-        setSelectedRecord(null);
+        // Remove from main records
+        setRecords((prev) => prev.filter((r) => r._id !== id));
+        
+        // Remove from selectedRecord if open
+        setSelectedRecord((prev) => (prev?._id === id ? null : prev));
+
+        // Remove from folderRecords if this record is in a folder
+        setFolderRecords((prev) => prev.filter((r) => r._id !== id));
+      } else {
+        const error = await response.json().catch(() => ({}));
+        alert(`Failed to delete record: ${error.message || "Unknown error"}`);
       }
     } catch (error) {
       console.error("Error deleting record:", error);
+      alert("Error deleting record. Please try again.");
     }
   };
+
+
 
   const openEditRecord = (record) => {
     setRecordToEdit(record);
@@ -160,16 +180,30 @@ export function Dashboard() {
   const openFolder = async (folder) => {
     setSelectedFolder(folder);
     setLoadingFolder(true);
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/folder/${folder._id}`);
       if (response.ok) {
         const text = await response.text();
         const data = text ? JSON.parse(text) : null;
+
+        console.log("Folder API Response:", data);
+        console.log("Folder records:", data?.folder?.records);
+        console.log("Folder record (singular):", data?.folder?.record);
+
+        // Check for both 'records' and 'record' (singular) due to potential database inconsistency
+        const recordsArray = data?.folder?.records || data?.folder?.record || [];
         
-        if (data && data.folder && data.folder.record) {
-          setFolderRecords(data.folder.record);
+        if (Array.isArray(recordsArray) && recordsArray.length > 0) {
+          // Ensure each record has a valid _id
+          const normalizedRecords = recordsArray.map(r => ({
+            ...r,
+            _id: r._id || r.id, // fallback for missing _id
+          }));
+          console.log("Normalized records:", normalizedRecords);
+          setFolderRecords(normalizedRecords);
         } else {
+          console.log("No records array found or data structure issue");
           setFolderRecords([]);
         }
       }
@@ -180,6 +214,7 @@ export function Dashboard() {
       setLoadingFolder(false);
     }
   };
+
 
   const openAddRecordModal = () => {
     setShowAddRecordModal(true);
@@ -199,7 +234,7 @@ export function Dashboard() {
     setAddRecordError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/folder/add-record/${selectedFolder._id}`, {
+      const response = await fetch(`${API_BASE_URL}/folder/create-record/${selectedFolder._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -715,34 +750,36 @@ export function Dashboard() {
                 ) : folderRecords.length > 0 ? (
                   <div className="space-y-2">
                     {folderRecords.map(record => (
-                        <div
-                          key={record._id}
-                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                          onClick={() => {
-                            setSelectedFolder(null);
-                            setSelectedRecord(record);
-                          }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <p className="font-medium text-gray-900">{record.title}</p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(record.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteRecord(record._id);
-                            }}
-                            className="p-2 hover:bg-gray-200 rounded"
-                          >
-                            <Trash2 className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </div>
-                      ))}
+                  <div
+                    key={record._id}
+                    className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedFolder(null);
+                      setSelectedRecord(record);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{record.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(record.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("Deleting record from folder:", record);  // ← ADD THIS
+                        console.log("Record ID:", record._id);  // ← ADD THIS
+                        deleteRecord(record._id);
+                      }}
+                      className="p-2 hover:bg-gray-200 rounded"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                ))}
                   </div>
                 ) : (
                   <div className="text-center py-8 bg-gray-50 rounded-lg">

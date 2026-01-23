@@ -7,6 +7,11 @@ const folderSchema = new mongoose.Schema({
   records: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Record"
+  }],
+  // Keep 'record' field for backward compatibility with existing data
+  record: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Record"
   }]
 }, { timestamps: true });
 
