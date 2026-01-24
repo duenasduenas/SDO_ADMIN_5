@@ -9,38 +9,49 @@ export default function OpenFolder({ folder, API_BASE_URL, onFolderOpen, onRecor
       e.stopPropagation();
     }
 
+    console.log("📂 Opening folder:", folder);
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/folder/${folder._id}`);
+      const url = `${API_BASE_URL}/folder/${folder._id}`;
+      console.log("🔗 Fetching from:", url);
+      
+      const response = await fetch(url);
+      console.log("📡 Response status:", response.status);
+      
       if (response.ok) {
         const text = await response.text();
+        console.log("📝 Response text:", text);
+        
         const data = text ? JSON.parse(text) : null;
-
-        console.log("Folder API Response:", data);
-        console.log("Folder records:", data?.folder?.records);
-        console.log("Folder record (singular):", data?.folder?.record);
+        console.log("📊 Parsed data:", data);
 
         // Check for both 'records' and 'record' (singular) due to potential database inconsistency
         const recordsArray = data?.folder?.records || data?.folder?.record || [];
+        console.log("📋 Records array:", recordsArray);
 
-        if (Array.isArray(recordsArray) && recordsArray.length > 0) {
-          // Ensure each record has a valid _id
+        if (Array.isArray(recordsArray)) {
           const normalizedRecords = recordsArray.map(r => ({
             ...r,
-            _id: r._id || r.id, // fallback for missing _id
+            _id: r._id || r.id,
           }));
-          console.log("Normalized records:", normalizedRecords);
+          console.log("✅ Normalized records:", normalizedRecords);
           onRecordsLoaded(normalizedRecords);
         } else {
-          console.log("No records array found or data structure issue");
+          console.log("❌ No records array found");
           onRecordsLoaded([]);
         }
 
         onFolderOpen(folder);
+        console.log("✅ Folder opened successfully");
+      } else {
+        console.error("❌ Response not ok, status:", response.status);
+        const text = await response.text();
+        console.error("❌ Error response:", text);
+        onRecordsLoaded([]);
       }
     } catch (error) {
-      console.error("Error fetching folder details:", error);
+      console.error("❌ Error fetching folder details:", error);
       onRecordsLoaded([]);
     } finally {
       setLoading(false);
@@ -52,8 +63,7 @@ export default function OpenFolder({ folder, API_BASE_URL, onFolderOpen, onRecor
     return (
       <div
         onClick={handleOpenFolder}
-        className="cursor-pointer"
-        disabled={loading}
+        className={`cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}
       >
         {children}
       </div>

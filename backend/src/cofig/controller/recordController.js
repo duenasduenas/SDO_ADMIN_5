@@ -92,17 +92,86 @@ export async function deleteRecord(req, res) {
   }
 }
 
+
+// Backend Pagination, Search, Filter, Sort
 export async function getAllRecords(req, res) {
   try {
-    // Fixed populate: Only populate 'folder' (assuming it's an array of ObjectIds referencing Folder model)
-    // Remove invalid paths like 'title', 'content', etc., as they're not references
-    const records = await Record.find()
-      .populate({ path: "title content folder category image", select: "name" });  // Only this is valid
+    // Extract query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const categoryFilter = req.query.category || "";
+    const folderFilter = req.query.folder || "";
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
 
-    // Extract unique categories from the fetched records
-    const categories = [...new Set(records.map(r => r.category).filter(Boolean))];  // Unique, non-null categories
+    // Build query filters
+    const query = {};
 
-    res.status(200).json({ records, categories });
+    // Search filter
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { content: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    // Category filter
+    if (categoryFilter) {
+      query.category = categoryFilter;
+    }
+
+    // Folder filter
+    if (folderFilter) {
+      query.folder = folderFilter;
+    }
+
+    // Calculate skip
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const totalRecords = await Record.countDocuments(query);
+
+    // Fetch records
+    // ⚠️ ONLY populate reference fields (folder, category)
+    // ❌ DON'T populate regular fields like title, content, image
+    const records = await Record.find(query)
+      .populate({ path: "folder", select: "name" })  // ✅ if folder is a reference
+      .populate({ path: "category", select: "name" })  // ✅ if category is a reference
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(limit);
+
+    // Pagination metadata
+    const totalPages = Math.ceil(totalRecords / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    res.status(200).json({
+      success: true,
+      records,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalRecords,
+        recordsPerPage: limit,
+        hasNextPage,
+        hasPrevPage,
+        nextPage: hasNextPage ? page + 1 : null,
+        prevPage: hasPrevPage ? page - 1 : null
+      }
+    });
+  } catch (error) {
+    console.error("GET ALL RECORDS ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Optional: Separate endpoint for getting all categories
+export async function getAllCategories(req, res) {
+  try {
+    const categories = await Category.find().select("name");
+    res.status(200).json({ categories });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

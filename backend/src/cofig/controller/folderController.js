@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import Folder from "../../models/Folder.js";
 import Record from "../../models/Record.js";
-import fs from 'fs/promises';
-import path from 'path';
 
 export async function getAllFolders(req, res) {
   try {

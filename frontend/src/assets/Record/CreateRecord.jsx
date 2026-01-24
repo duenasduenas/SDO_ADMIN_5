@@ -17,7 +17,7 @@ export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
 
     setLoading(true);
     setError("");
-
+f
     try {
       // Step 1: Create the record
       const res = await fetch(`${apiBaseUrl}/record/create-record`, {
