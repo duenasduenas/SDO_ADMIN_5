@@ -190,14 +190,16 @@ export async function getCategories(req, res) {
 }
 
 export async function editRecord(req, res){
-    const { title, content, image, category } = req.body;
+    const { title, content, image, category, folder } = req.body;
 
     try{
         if( !title || !content || !category ){
             return res.status(404).json({message: "Title, Content, Category is Missing"})
         }
 
-        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image, category })
+        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image, category, folder }, { new: true })
+          .populate({ path: "folder", select: "name" })
+          .populate({ path: "category", select: "name" });
 
         res.status(200).json({ message: "Editted", editRecord })       
 
@@ -215,7 +217,10 @@ export async function getRecordsByDay(req, res) {
             'dateInfo.year': parseInt(year),
             'dateInfo.month': parseInt(month),
             'dateInfo.day': parseInt(day)
-        }). sort ({ createdAt: -1 })
+        })
+          .populate({ path: "folder", select: "name" })
+          .populate({ path: "category", select: "name" })
+          .sort({ createdAt: -1 })
 
         res.status(200).json({ records, count: records.length })
 
@@ -233,7 +238,10 @@ export async function getRecordsByMonth(req, res) {
         const records = await Record.find({
             'dateInfo.year': parseInt(year),
             'dateInfo.month': parseInt(month)
-        }).sort({ createdAt: -1 })
+        })
+          .populate({ path: "folder", select: "name" })
+          .populate({ path: "category", select: "name" })
+          .sort({ createdAt: -1 })
 
         res.status(200).json({ records, count: records.length })
 
@@ -252,7 +260,10 @@ export async function getRecordsByWeek(req, res) {
         const records = await Record.find({
             'dateInfo.year': parseInt(year),
             'dateInfo.week': parseInt(week)
-        }).sort({createdAt: -1})
+        })
+          .populate({ path: "folder", select: "name" })
+          .populate({ path: "category", select: "name" })
+          .sort({createdAt: -1})
 
         res.status(200).json({ records, count: records.length })
 

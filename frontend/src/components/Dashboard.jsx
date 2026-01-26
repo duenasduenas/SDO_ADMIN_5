@@ -243,16 +243,6 @@ export function Dashboard() {
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-600" />
               <h1 className="text-2xl font-normal text-gray-800">My Drive</h1>
-              <DarkModeModal 
-                isOpen={showYourModal} 
-                onClose={() => setShowYourModal(false)}
-                title="Your Modal Title"
-                maxWidth="max-w-3xl"
-              >
-                <div className="space-y-4">
-                  <p>Modal content here</p>
-                </div>
-              </DarkModeModal>
             </div>
 
             {/* Right: Actions */}
@@ -275,6 +265,12 @@ export function Dashboard() {
               >
                 Monthly Summary
               </button>
+              {/* <button
+                onClick={() => setShowYourModal(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition whitespace-nowrap"
+              >
+                Dark Mode
+              </button> */}
             </div>
           </div>
 
@@ -889,6 +885,18 @@ export function Dashboard() {
           apiBaseUrl={API_BASE_URL}
         />
       )}
+
+      {/* Dark Mode Modal */}
+      <DarkModeModal 
+        isOpen={showYourModal} 
+        onClose={() => setShowYourModal(false)}
+        title="Settings"
+        maxWidth="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <p>Dark Mode is currently enabled for modals. More settings coming soon!</p>
+        </div>
+      </DarkModeModal>
     </div>
   );
 }
