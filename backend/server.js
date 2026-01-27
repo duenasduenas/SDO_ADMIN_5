@@ -36,6 +36,11 @@ app.use('/api/folder', folderRoutes);
 app.use("/api/category", categoryRoutes);
 app.use('/api/ai', aiRoutes);
 
+app.get("/", (req, res) => {
+  res.send("API is running 🚀");
+});
+
+
 
 connectDB();
 
