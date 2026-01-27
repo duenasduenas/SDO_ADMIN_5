@@ -41,6 +41,19 @@ app.get("/", (req, res) => {
 });
 
 
+const mongoUri = process.env.MONGODB_URI;
+
+mongoose.set("strictQuery", true); // optional, avoids warnings
+
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 30000, // wait 30s before timing out
+})
+.then(() => console.log("MongoDB connected ✅"))
+.catch((err) => console.error("DATABASE CONNECTION ERROR:", err));
+
+
 
 connectDB();
 
