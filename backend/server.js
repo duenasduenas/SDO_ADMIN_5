@@ -14,7 +14,7 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// CORS Configuration - MUST BE FIRST
+// CORS Configuration
 app.use(cors({
   origin: '*', // Allow all origins for testing
   credentials: false,
@@ -23,9 +23,6 @@ app.use(cors({
   exposedHeaders: ['*'],
   maxAge: 86400
 }));
-
-// Handle preflight requests explicitly
-app.options('*', cors());
 
 // Body parser
 app.use(express.json());
