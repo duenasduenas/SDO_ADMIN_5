@@ -5,6 +5,7 @@ import recordRoutes from '../backend/src/routes/recordRoutes.js'
 import folderRoutes from '../backend/src/routes/folderRoutes.js'
 import aiRoutes from '../backend/src/routes/aiRoutes.js'
 import categoryRoutes from '../backend/src/routes/categoryRoutes.js'
+import mongoose from "mongoose";
 
 import { connectDB } from '../backend/src/cofig/db.js'
 import dotenv from "dotenv"
@@ -39,7 +40,6 @@ app.use('/api/ai', aiRoutes);
 app.get("/", (req, res) => {
   res.send("API is running 🚀");
 });
-
 
 const mongoUri = process.env.MONGODB_URI;
 
