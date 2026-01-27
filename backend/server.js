@@ -14,7 +14,8 @@ dotenv.config();
 
 const allowedOrigins = [
     "http://localhost:5173",
-    "http://localhost:5001"
+    "http://localhost:5001",
+    'https://unoffending-shelley-swingingly.ngrok-free.dev',
 ]
 
 const app = express();
