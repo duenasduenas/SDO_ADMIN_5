@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, FolderOpen, Calendar, Clock, Search, Plus, Trash2, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import SummaryDropdown from "./SummaryDropDown";
+import SummaryDropdown from "./SummaryDropdown.jsx";
 import EditRecordModal from "../assets/Record/EditRecordModal";
 import WeeklySummaryModal from "../assets/Summary/weeklySummaryModal";
 import MonthlySummaryModal from "../assets/Summary/monthlySummaryModal";
