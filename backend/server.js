@@ -16,6 +16,8 @@ const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5001",
     'https://unoffending-shelley-swingingly.ngrok-free.dev',
+    'https://697941d134152f9f105003c5--dtsamin.netlify.app',
+    'https://dtsamin.netlify.app',
 ]
 
 const app = express();
