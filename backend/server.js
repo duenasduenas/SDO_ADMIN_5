@@ -6,35 +6,31 @@ import folderRoutes from '../backend/src/routes/folderRoutes.js'
 import aiRoutes from '../backend/src/routes/aiRoutes.js'
 import categoryRoutes from '../backend/src/routes/categoryRoutes.js'
 import mongoose from "mongoose";
-
 import { connectDB } from '../backend/src/cofig/db.js'
 import dotenv from "dotenv"
 
 dotenv.config();
 
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5001",
-    'https://unoffending-shelley-swingingly.ngrok-free.dev',
-    'https://697941d134152f9f105003c5--dtsamin.netlify.app',
-    'https://dtsamin.netlify.app',
-]
-
 const app = express();
 const server = http.createServer(app);
 
-// IMPORTANT: Middleware order matters!
-// 1. CORS must come BEFORE routes
+// CORS Configuration - MUST BE FIRST
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  optionsSuccessStatus: 200
+  origin: '*', // Allow all origins for testing
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  exposedHeaders: ['*'],
+  maxAge: 86400
 }));
 
-// 2. Then body parser
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// Body parser
 app.use(express.json());
 
-// 3. Then routes
+// Routes
 app.use('/api/record', recordRoutes);
 app.use('/api/folder', folderRoutes);
 app.use("/api/category", categoryRoutes);
@@ -46,17 +42,15 @@ app.get("/", (req, res) => {
 
 const mongoUri = process.env.MONGODB_URI;
 
-mongoose.set("strictQuery", true); // optional, avoids warnings
+mongoose.set("strictQuery", true);
 
 mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000, // wait 30s before timing out
+  serverSelectionTimeoutMS: 30000,
 })
 .then(() => console.log("MongoDB connected ✅"))
 .catch((err) => console.error("DATABASE CONNECTION ERROR:", err));
-
-
 
 connectDB();
 
