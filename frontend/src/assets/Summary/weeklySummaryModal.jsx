@@ -101,7 +101,11 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
 
       // Fetch folders
       const folderIds = new Set();
-      records.forEach(r => r.folder?.forEach(f => folderIds.add(typeof f === "string" ? f : f._id)));
+      records.forEach(r => {
+        if (Array.isArray(r.folder)) {
+          r.folder.forEach(f => folderIds.add(typeof f === "string" ? f : f._id));
+        }
+      });
       const folderNameMap = {};
       if (folderIds.size > 0) {
         const folderRes = await fetch(`${apiBaseUrl}/folder`);
