@@ -5,7 +5,7 @@ export default function CreateRecordModal({
   isOpen,
   onClose,
   onSuccess,
-  apiBaseUrl = "http://localhost:5001/api"
+  apiBaseUrl = "https://unoffending-shelley-swingingly.ngrok-free.dev/api"
 }) {
   const [folders, setFolders] = useState([]);
   const [categories, setCategories] = useState([]);
