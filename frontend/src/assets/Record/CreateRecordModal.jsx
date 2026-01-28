@@ -5,7 +5,6 @@ export default function CreateRecordModal({
   isOpen,
   onClose,
   onSuccess,
-  apiBaseUrl = "https://unoffending-shelley-swingingly.ngrok-free.dev/api"
 }) {
   const [folders, setFolders] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -26,6 +25,8 @@ export default function CreateRecordModal({
   const [categoryMode, setCategoryMode] = useState("existing"); // "existing" or "new"
   const [folderMode, setFolderMode] = useState("existing"); // "existing" or "new"
 
+  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
   // Fetch folders and categories
   useEffect(() => {
     if (!isOpen) return;
@@ -33,8 +34,8 @@ export default function CreateRecordModal({
     const fetchData = async () => {
       try {
         const [folderRes, categoryRes] = await Promise.all([
-          fetch(`${apiBaseUrl}/folder`),
-          fetch(`${apiBaseUrl}/category`)
+          fetch(`${API_BASE_URL}/folder`),
+          fetch(`${API_BASE_URL}/category`)
         ]);
 
         if (!folderRes.ok || !categoryRes.ok) throw new Error("Failed to fetch data");
@@ -81,7 +82,7 @@ export default function CreateRecordModal({
       // ---------- CATEGORY ----------
       let categoryId = selectedCategoryId;
       if (categoryMode === "new" && newCategoryName.trim()) {
-        const catRes = await fetch(`${apiBaseUrl}/category/create`, {
+        const catRes = await fetch(`${API_BASE_URL}/category/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: newCategoryName.trim() })
@@ -105,7 +106,7 @@ export default function CreateRecordModal({
       }
 
       // ---------- RECORD ----------
-      const recordRes = await fetch(`${apiBaseUrl}/record/create-record`, {
+      const recordRes = await fetch(`${API_BASE_URL}/record/create-record`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -125,7 +126,7 @@ export default function CreateRecordModal({
       // ---------- FOLDER ----------
       let folderId = selectedFolderId;
       if (folderMode === "new" && newFolderName.trim()) {
-        const folderRes = await fetch(`${apiBaseUrl}/folder/create-folder`, {
+        const folderRes = await fetch(`${API_BASE_URL}/folder/create-folder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: newFolderName.trim() })
@@ -142,7 +143,7 @@ export default function CreateRecordModal({
 
       // Add record to folder if folderId exists
       if (folderId) {
-        const addRes = await fetch(`${apiBaseUrl}/folder/create-record/${folderId}`, {
+        const addRes = await fetch(`${API_BASE_URL}/folder/create-record/${folderId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ recordId: newRecord._id })
