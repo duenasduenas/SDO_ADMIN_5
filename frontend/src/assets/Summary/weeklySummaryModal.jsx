@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 
-export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
+export default function WeeklySummaryModal({ isOpen, onClose }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [week, setWeek] = useState("");
   const [loading, setLoading] = useState(false);
@@ -11,6 +11,10 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [folderNames, setFolderNames] = useState({});
   const [categoryNames, setCategoryNames] = useState({});
+
+  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
+  if (!isOpen) return null;
 
   // Calculate ISO week number
   const getWeekNumber = (date) => {
@@ -94,17 +98,30 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
       setAiLoading(true);
 
       // Fetch weekly records
-      const res = await fetch(`${apiBaseUrl}/record/week-record/${year}/${week}`);
+      const res = await fetch(`${API_BASE_URL}/record/week-record/${year}/${week}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       const data = await res.json();
       const records = Array.isArray(data.records) ? data.records : [];
       setWeeklyRecords(records);
 
       // Fetch folders
       const folderIds = new Set();
-      records.forEach(r => r.folder?.forEach(f => folderIds.add(typeof f === "string" ? f : f._id)));
+      records.forEach(r => {
+        if (r.folder) {
+          const folders = Array.isArray(r.folder) ? r.folder : [r.folder];
+          folders.forEach(f => folderIds.add(typeof f === "string" ? f : f._id));
+        }
+      });
       const folderNameMap = {};
       if (folderIds.size > 0) {
-        const folderRes = await fetch(`${apiBaseUrl}/folder`);
+        const folderRes = await fetch(`${API_BASE_URL}/folder`, {
+          headers: {
+            "ngrok-skip-browser-warning": "true"
+          }
+        });
         const folderData = await folderRes.json();
         (folderData.folders || []).forEach(f => {
           if (folderIds.has(f._id)) folderNameMap[f._id] = f.name;
@@ -117,7 +134,11 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
       records.forEach(r => { if (r.category) categoryIds.add(typeof r.category === "string" ? r.category : r.category._id); });
       const categoryNameMap = {};
       if (categoryIds.size > 0) {
-        const catRes = await fetch(`${apiBaseUrl}/category`);
+        const catRes = await fetch(`${API_BASE_URL}/category`, {
+          headers: {
+            "ngrok-skip-browser-warning": "true"
+          }
+        });
         const catData = await catRes.json();
         (catData.categories || []).forEach(c => {
           if (categoryIds.has(c._id)) categoryNameMap[c._id] = c.name;
@@ -131,9 +152,12 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
 
       // AI summary
       try {
-        const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`, {
+        const ragRes = await fetch(`${API_BASE_URL}/ai/rag-summary`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
           body: JSON.stringify({ period: "weekly", records })
         });
         if (ragRes.ok) {
@@ -156,8 +180,6 @@ export default function WeeklySummaryModal({ isOpen, onClose, apiBaseUrl }) {
       setAiLoading(false);
     }
   };
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">

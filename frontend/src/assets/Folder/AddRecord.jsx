@@ -51,8 +51,16 @@ export default function AddRecord() {
         setFetchingRecords(true);
         try {
             const [recordsRes, categoriesRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/record`),
-                fetch(`${API_BASE_URL}/category`)
+                fetch(`${API_BASE_URL}/record`, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true"
+                    }
+                }),
+                fetch(`${API_BASE_URL}/category`, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true"
+                    }
+                })
             ]);
 
             const recordsData = await recordsRes.json();
@@ -69,7 +77,6 @@ export default function AddRecord() {
             setFetchingRecords(false);
         }
     };
-
     const addExistingRecord = async () => {
         if (!recordId) {
             setMessage({ type: "error", text: "Please select a record" });
