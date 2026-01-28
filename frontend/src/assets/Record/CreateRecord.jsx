@@ -9,6 +9,9 @@ export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
+
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim() || !category.trim()) {
       setError("All fields are required");
@@ -20,7 +23,7 @@ export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
 f
     try {
       // Step 1: Create the record
-      const res = await fetch(`${apiBaseUrl}/record/create-record`, {
+      const res = await fetch(`${API_BASE_URL}/record/create-record`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, category, content }),
@@ -35,7 +38,7 @@ f
 
       // Step 2: If folderId is provided, add the record to the folder
       if (folderId) {
-        const folderRes = await fetch(`${apiBaseUrl}/folder/add-record/${folderId}`, {
+        const folderRes = await fetch(`${API_BASE_URL}/folder/add-record/${folderId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ recordId: newRecord._id }),

@@ -1,10 +1,19 @@
 import express from "express";
-import { getAllCategories, deleteCategory, createCategory } from "../cofig/controller/categoryController.js";
+import {
+  getAllCategories,
+  deleteCategory,
+  createCategory
+} from "../cofig/controller/categoryController.js";
 
 const router = express.Router();
 
-router.get("/", getAllCategories);
-router.delete("/:id", deleteCategory);
+// CREATE FIRST
 router.post("/create", createCategory);
+
+// GET ALL
+router.get("/", getAllCategories);
+
+// DELETE LAST
+router.delete("/:id", deleteCategory);
 
 export default router;
