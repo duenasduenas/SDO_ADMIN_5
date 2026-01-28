@@ -48,7 +48,10 @@ export default function EditRecordModal({
       try {
         const res = await fetch(`${apiBaseUrl}/category/create`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
           body: JSON.stringify({ name: editForm.category.name })
         });
         const data = await res.json();
@@ -71,7 +74,10 @@ export default function EditRecordModal({
         `${apiBaseUrl}/record/edit-record/${record._id}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
           body: JSON.stringify({
             title: editForm.title,
             content: editForm.content,

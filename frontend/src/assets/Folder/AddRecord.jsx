@@ -77,6 +77,7 @@ export default function AddRecord() {
             setFetchingRecords(false);
         }
     };
+
     const addExistingRecord = async () => {
         if (!recordId) {
             setMessage({ type: "error", text: "Please select a record" });
@@ -95,11 +96,14 @@ export default function AddRecord() {
 
         try {
             const res = await fetch(
-                `${API_BASE_URL}/folder/add-record/${folderId}`,
+                `${API_BASE_URL}/folder/create-record/${folderId}`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title: selectedRecord.title })
+                    headers: {
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true"
+                    },
+                    body: JSON.stringify({ recordId })  // Send recordId
                 }
             );
 
@@ -136,7 +140,10 @@ export default function AddRecord() {
         try {
             const createRes = await fetch(`${API_BASE_URL}/record/create-record`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "true"
+                },
                 body: JSON.stringify({
                     title: title.trim(),
                     content: description.trim() || "No description provided",
@@ -151,13 +158,16 @@ export default function AddRecord() {
                 // Now add the newly created record to the folder
                 const newRecordId = createData._id;
                 const addRes = await fetch(
-                    `${API_BASE_URL}/folder/add-record/${folderId}`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ recordId: newRecordId })
-                    }
-                );
+                `${API_BASE_URL}/folder/add-record/${folderId}`,
+                {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "ngrok-skip-browser-warning": "true"
+                    },
+                    body: JSON.stringify({ recordId: newRecordId })
+                }
+            );
 
                 if (addRes.ok) {
                     setMessage({ type: "success", text: "Record created and added to folder!" });
