@@ -19,6 +19,8 @@ export default function AddRecord() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
 
+    const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
     useEffect(() => {
         if (!folderId) {
             setMessage({ type: "error", text: "Invalid folder ID" });
@@ -49,8 +51,8 @@ export default function AddRecord() {
         setFetchingRecords(true);
         try {
             const [recordsRes, categoriesRes] = await Promise.all([
-                fetch("http://localhost:5001/api/record"),
-                fetch("http://localhost:5001/api/category")
+                fetch(`${API_BASE_URL}/record`),
+                fetch(`${API_BASE_URL}/category`)
             ]);
 
             const recordsData = await recordsRes.json();
@@ -86,7 +88,7 @@ export default function AddRecord() {
 
         try {
             const res = await fetch(
-                `http://localhost:5001/api/folder/add-record/${folderId}`,
+                `${API_BASE_URL}/folder/add-record/${folderId}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -125,7 +127,7 @@ export default function AddRecord() {
         setMessage({ type: "", text: "" });
 
         try {
-            const createRes = await fetch("http://localhost:5001/api/record/create-record", {
+            const createRes = await fetch(`${API_BASE_URL}/record/create-record`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -142,7 +144,7 @@ export default function AddRecord() {
                 // Now add the newly created record to the folder
                 const newRecordId = createData._id;
                 const addRes = await fetch(
-                    `http://localhost:5001/api/folder/add-record/${folderId}`,
+                    `${API_BASE_URL}/folder/add-record/${folderId}`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

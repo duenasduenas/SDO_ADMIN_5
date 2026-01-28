@@ -15,15 +15,16 @@ const router = express.Router();
 router.post("/create-folder", createFolder);
 router.put("/edit-folder/:id", editFolder);
 
-// ACTION ROUTES (before :id)
+// ACTION ROUTES
 router.post("/add-record/:id", addRecordToFolder);
 router.post("/create-record/:id", createRecordToFolder);
 
-// GENERAL GET
+// GET ALL
 router.get("/", getAllFolders);
 
-// SINGLE ITEM (must be last)
+// SINGLE / DELETE LAST
 router.get("/:id", getFolderById);
 router.delete("/:id", deleteFolder);
+
 
 export default router;

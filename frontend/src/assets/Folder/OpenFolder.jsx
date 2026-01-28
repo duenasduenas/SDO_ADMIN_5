@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
 
-export default function OpenFolder({ folder, API_BASE_URL, onFolderOpen, onRecordsLoaded, children }) {
+export default function OpenFolder({ folder, onFolderOpen, onRecordsLoaded, children }) {
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
+  // Fetch folders and categories
 
   const handleOpenFolder = async (e) => {
     if (e) {
@@ -16,7 +19,11 @@ export default function OpenFolder({ folder, API_BASE_URL, onFolderOpen, onRecor
       const url = `${API_BASE_URL}/folder/${folder._id}`;
       console.log("🔗 Fetching from:", url);
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       console.log("📡 Response status:", response.status);
       
       if (response.ok) {

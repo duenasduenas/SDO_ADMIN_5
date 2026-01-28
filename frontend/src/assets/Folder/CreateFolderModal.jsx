@@ -6,7 +6,8 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_BASE_URL = "http://localhost:5001/api"; // adjust if needed
+  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+
 
   const handleCreate = async () => {
   if (!folderName.trim()) {

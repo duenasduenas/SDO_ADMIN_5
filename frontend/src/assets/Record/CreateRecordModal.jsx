@@ -34,8 +34,16 @@ export default function CreateRecordModal({
     const fetchData = async () => {
       try {
         const [folderRes, categoryRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/folder`),
-          fetch(`${API_BASE_URL}/category`)
+          fetch(`${API_BASE_URL}/folder`, {
+            headers: { 
+              "ngrok-skip-browser-warning": "true" 
+            }
+          }),
+          fetch(`${API_BASE_URL}/category`, {
+            headers: { 
+              "ngrok-skip-browser-warning": "true" 
+            }
+          })
         ]);
 
         if (!folderRes.ok || !categoryRes.ok) throw new Error("Failed to fetch data");
@@ -43,8 +51,13 @@ export default function CreateRecordModal({
         const folderData = await folderRes.json();
         const categoryData = await categoryRes.json();
 
-        setFolders(folderData.folders || []);
-        setCategories(categoryData.categories || []);
+        // Add these console logs to see what you're getting
+        console.log("Folder data:", folderData);
+        console.log("Category data:", categoryData);
+
+        setFolders(Array.isArray(folderData.folders) ? folderData.folders : []);
+        setCategories(Array.isArray(categoryData.categories) ? categoryData.categories : []);
+
       } catch (err) {
         console.error(err);
         setError("Failed to fetch folders or categories");
@@ -84,7 +97,7 @@ export default function CreateRecordModal({
       if (categoryMode === "new" && newCategoryName.trim()) {
         const catRes = await fetch(`${API_BASE_URL}/category/create`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
           body: JSON.stringify({ name: newCategoryName.trim() })
         });
 
@@ -108,7 +121,7 @@ export default function CreateRecordModal({
       // ---------- RECORD ----------
       const recordRes = await fetch(`${API_BASE_URL}/record/create-record`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
         body: JSON.stringify({
           title: recordTitle,
           content: recordContent,
@@ -128,7 +141,7 @@ export default function CreateRecordModal({
       if (folderMode === "new" && newFolderName.trim()) {
         const folderRes = await fetch(`${API_BASE_URL}/folder/create-folder`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
           body: JSON.stringify({ name: newFolderName.trim() })
         });
 
@@ -145,7 +158,7 @@ export default function CreateRecordModal({
       if (folderId) {
         const addRes = await fetch(`${API_BASE_URL}/folder/create-record/${folderId}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
           body: JSON.stringify({ recordId: newRecord._id })
         });
 
