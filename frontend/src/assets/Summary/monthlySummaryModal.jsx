@@ -54,8 +54,9 @@ export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
         categoriesCount[catId] = (categoriesCount[catId] || 0) + 1;
       }
 
-      if (Array.isArray(r.folder) && r.folder.length > 0) {
-        r.folder.forEach(f => {
+      if (r.folder) {
+        const folders = Array.isArray(r.folder) ? r.folder : [r.folder];
+        folders.forEach(f => {
           const folderId = typeof f === "string" ? f : f._id;
           foldersCount[folderId] = (foldersCount[folderId] || 0) + 1;
         });
@@ -94,20 +95,32 @@ export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
       setAiLoading(true);
 
       // 1️⃣ Fetch records
-      const res = await fetch(`${apiBaseUrl}/record/month-record/${year}/${month}`);
+      const res = await fetch(`${apiBaseUrl}/record/month-record/${year}/${month}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       const data = await res.json();
       const records = Array.isArray(data.records) ? data.records : [];
       setMonthlyRecords(records);
 
       // 2️⃣ Fetch folder names
-      const folderRes = await fetch(`${apiBaseUrl}/folder`);
+      const folderRes = await fetch(`${apiBaseUrl}/folder`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       const folderData = await folderRes.json();
       const folderMap = {};
       (folderData.folders || []).forEach(f => folderMap[f._id] = f.name);
       setFolderNames(folderMap);
 
       // 3️⃣ Fetch category names
-      const categoryRes = await fetch(`${apiBaseUrl}/category`);
+      const categoryRes = await fetch(`${apiBaseUrl}/category`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
       const categoryData = await categoryRes.json();
       const categoryMap = {};
       (categoryData.categories || []).forEach(c => categoryMap[c._id] = c.name);
@@ -121,7 +134,10 @@ export default function MonthlySummaryModal({ isOpen, onClose, apiBaseUrl }) {
       try {
         const ragRes = await fetch(`${apiBaseUrl}/ai/rag-summary`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
           body: JSON.stringify({ period: "monthly", records })
         });
         if (ragRes.ok) {
