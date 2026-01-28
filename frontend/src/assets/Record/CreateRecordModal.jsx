@@ -52,7 +52,7 @@ export default function CreateRecordModal({
     };
 
     fetchData();
-  }, [isOpen, apiBaseUrl]);
+  }, [isOpen, API_BASE_URL]);
 
   // Reset form when modal closes
   useEffect(() => {
