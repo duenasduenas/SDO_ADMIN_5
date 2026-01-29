@@ -54,26 +54,14 @@ export function Dashboard() {
   const day = today.getDate();
   const week = Math.ceil(day / 7);
 
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+  const API_BASE_URL = 'http://192.168.18.5:5000/api';
 
   useEffect(() => {
     fetchData();
   }, [currentPage, searchQuery, selectedCategory]);
 
   // Debounce search to avoid too many API calls
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (currentPage !== 1) {
-        setCurrentPage(1); // Reset to first page on new search
-      } else {
-        fetchData();
-      }
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery, selectedCategory]);
-
-  const fetchData = async () => {
+ const fetchData = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -86,13 +74,18 @@ export function Dashboard() {
       if (searchQuery) params.append('search', searchQuery);
       if (selectedCategory) params.append('category', selectedCategory);
 
-      // ADD THIS HEADER FOR NGROK
+      // Headers for ngrok
       const headers = {
-        'ngrok-skip-browser-warning': 'true'
+        'ngrok-skip-browser-warning': 'true',
+        'Content-Type': 'application/json'
       };
 
-      // Fetch with headers
-      const recordsRes = await fetch(`${API_BASE_URL}/record?${params}`, { headers });
+      // Fetch records
+      const recordsRes = await fetch(`${API_BASE_URL}/record?${params}`, { 
+        headers,
+        method: 'GET'
+      });
+      
       if (recordsRes.ok) {
         const data = await recordsRes.json();
         setRecords(data.records || []);
@@ -101,12 +94,14 @@ export function Dashboard() {
         setTotalRecords(data.pagination?.totalRecords || 0);
       }
 
+      // Fetch folders
       const foldersRes = await fetch(`${API_BASE_URL}/folder`, { headers });
       if (foldersRes.ok) {
         const foldersData = await foldersRes.json();
         setFolders(Array.isArray(foldersData.folders) ? foldersData.folders : []);
       }
 
+      // Fetch categories
       const categoriesRes = await fetch(`${API_BASE_URL}/category`, { headers });
       if (categoriesRes.ok) {
         const categoriesData = await categoriesRes.json();
@@ -119,6 +114,7 @@ export function Dashboard() {
       setLoading(false);
     }
   };
+
   const deleteRecord = async (id) => {
     if (!id) {
       console.error("Cannot delete: Record ID is missing");

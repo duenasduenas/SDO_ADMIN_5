@@ -15,7 +15,8 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build-and-serve": "cd ../frontend && npm run build && cp -r dist/* ../backend/public/ && cd ../backend && npm run dev"
   },
   "keywords": [],
   "author": "",
