@@ -6,49 +6,47 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
-
+  const API_BASE_URL = "http://192.168.0.100:5004/api";
 
   const handleCreate = async () => {
-  if (!folderName.trim()) {
-    setError("Folder name cannot be empty");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/folder/create-folder`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: folderName }),
-    });
-
-    const contentType = response.headers.get("content-type");
-    let data = {};
-
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error(`Expected JSON but got: ${text}`);
+    if (!folderName.trim()) {
+      setError("Folder name cannot be empty");
+      return;
     }
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to create folder");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/folder/create-folder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: folderName }),
+      });
+
+      const contentType = response.headers.get("content-type");
+      let data = {};
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Expected JSON but got: ${text}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create folder");
+      }
+
+      onSuccess(data);
+      setFolderName("");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    onSuccess(data);
-    setFolderName("");
-  } catch (err) {
-    console.error(err);
-    setError(err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   if (!isOpen) return null;
 
@@ -57,7 +55,10 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }) {
       <div className="bg-white w-full max-w-md rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium">Create Folder</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -19,7 +19,7 @@ export default function AddRecord() {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
 
-    const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+    const API_BASE_URL = 'http://192.168.0.100:5004/api';
 
     useEffect(() => {
         if (!folderId) {

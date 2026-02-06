@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
-export default function DeleteFolder({ id, folders, setFolders, setSelectedFolder, API_BASE_URL = "http://localhost:5000/api" }) {
+export default function DeleteFolder({ id, folders, setFolders, setSelectedFolder, API_BASE_URL = "http://192.168.0.100:5004/api" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

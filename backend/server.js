@@ -54,7 +54,7 @@ app.use((req, res) => {
   }
 });
 
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGO_URI;
 
 mongoose.set("strictQuery", true);
 
@@ -68,7 +68,7 @@ mongoose.connect(mongoUri, {
 
 connectDB();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5004;
 
 server.listen(PORT, "0.0.0.0", () => {
     console.log("Server Connected", PORT)

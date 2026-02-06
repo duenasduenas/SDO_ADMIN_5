@@ -12,7 +12,7 @@ export default function WeeklySummaryModal({ isOpen, onClose }) {
   const [folderNames, setFolderNames] = useState({});
   const [categoryNames, setCategoryNames] = useState({});
 
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+  const API_BASE_URL = 'http://192.168.0.100:5004/api';
 
   if (!isOpen) return null;
 

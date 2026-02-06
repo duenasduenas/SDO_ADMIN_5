@@ -9,7 +9,7 @@ export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
+  const API_BASE_URL = 'http://192.168.0.100:5004/api';
 
 
   const handleSubmit = async () => {
