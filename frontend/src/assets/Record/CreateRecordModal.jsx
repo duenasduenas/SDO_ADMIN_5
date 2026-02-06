@@ -25,7 +25,7 @@ export default function CreateRecordModal({
   const [categoryMode, setCategoryMode] = useState("existing"); // "existing" or "new"
   const [folderMode, setFolderMode] = useState("existing"); // "existing" or "new"
 
-  const API_BASE_URL = 'http://192.168.0.100:5004/api';
+  const API_BASE_URL = "https://unoffending-shelley-swingingly.ngrok-free.dev/api";;
 
   // Fetch folders and categories
   useEffect(() => {
