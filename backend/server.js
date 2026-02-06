@@ -17,14 +17,31 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS Configuration
-app.use(cors({
-  origin: '*', // Allow all origins for testing
+const allowedOrigins = new Set([
+  "https://dtsdmin.netlify.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
-  exposedHeaders: ['*'],
-  maxAge: 86400
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+  exposedHeaders: ["*"],
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Body parser
 app.use(express.json());
