@@ -54,13 +54,11 @@ app.use((req, res) => {
   }
 });
 
-const mongoUri = process.env.MONGODB_URI;
+const mongoUri = process.env.MONGO_URI;
 
 mongoose.set("strictQuery", true);
 
 mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 30000,
 })
 .then(() => console.log("MongoDB connected ✅"))

@@ -19,11 +19,11 @@ const recordSchema = new mongoose.Schema({
 
   image: { type: String, default: null },
 
-  folder: {
+  folder: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Folder",
-    default: null
-  },
+    default: []
+  }],
 }, { timestamps: true }); // adds createdAt & updatedAt automatically
 
 const Record = mongoose.model("Record", recordSchema);

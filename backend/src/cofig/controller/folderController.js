@@ -202,4 +202,43 @@ export async function createRecordToFolder(req, res) {
   }
 }
 
+export async function removeRecordFromFolder(req, res) {
+  const { id: folderId } = req.params;
+  const { recordId } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(folderId)) {
+    return res.status(400).json({ message: "Invalid folder ID" });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(recordId)) {
+    return res.status(400).json({ message: "Invalid record ID" });
+  }
+
+  try {
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      return res.status(404).json({ message: "Folder not found" });
+    }
+
+    // Remove record from folder's records array
+    folder.records = folder.records.filter(rId => rId.toString() !== recordId);
+    await folder.save();
+
+    // Optional: Remove folder reference from record
+    const record = await Record.findById(recordId);
+    if (record) {
+      record.folder = record.folder.filter(fId => fId.toString() !== folderId);
+      await record.save();
+    }
+
+    res.status(200).json({ 
+      message: "Record removed from folder successfully", 
+      folder 
+    });
+  } catch (err) {
+    console.error("Error removing record from folder:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
 

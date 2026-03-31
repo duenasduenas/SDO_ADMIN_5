@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ArrowLeft, Plus, Loader2, CheckCircle, AlertCircle, Search, X } from "lucide-react";
+import { API_BASE_URL } from "../../../config.js";
 
 export default function AddRecord() {
     const { folderId } = useParams();
@@ -18,8 +19,6 @@ export default function AddRecord() {
     const [mode, setMode] = useState("existing"); // "existing" or "new"
     const [searchTerm, setSearchTerm] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
-
-    const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
 
     useEffect(() => {
         if (!folderId) {
@@ -63,8 +62,25 @@ export default function AddRecord() {
                 })
             ]);
 
-            const recordsData = await recordsRes.json();
-            const categoriesData = await categoriesRes.json();
+            const contentTypeRecords = recordsRes.headers.get("content-type");
+            const contentTypeCategories = categoriesRes.headers.get("content-type");
+
+            let recordsData = {};
+            let categoriesData = {};
+
+            if (contentTypeRecords && contentTypeRecords.includes("application/json")) {
+                recordsData = await recordsRes.json();
+            } else {
+                const text = await recordsRes.text();
+                throw new Error(`Expected JSON for records but got: ${text.substring(0, 200)}`);
+            }
+
+            if (contentTypeCategories && contentTypeCategories.includes("application/json")) {
+                categoriesData = await categoriesRes.json();
+            } else {
+                const text = await categoriesRes.text();
+                throw new Error(`Expected JSON for categories but got: ${text.substring(0, 200)}`);
+            }
 
             const recordsList = Array.isArray(recordsData.records) ? recordsData.records : [];
             setRecords(recordsList);
@@ -72,7 +88,7 @@ export default function AddRecord() {
             setCategories(Array.isArray(categoriesData.categories) ? categoriesData.categories : []);
         } catch (err) {
             console.error("Failed to fetch data:", err);
-            setMessage({ type: "error", text: "Failed to load data" });
+            setMessage({ type: "error", text: "Failed to load data: " + err.message });
         } finally {
             setFetchingRecords(false);
         }
@@ -107,7 +123,14 @@ export default function AddRecord() {
                 }
             );
 
-            const data = await res.json();
+            let data = {};
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await res.json();
+            } else {
+                const text = await res.text();
+                throw new Error(`Expected JSON but got: ${text.substring(0, 200)}`);
+            }
 
             if (res.ok) {
                 setMessage({ type: "success", text: data.message || "Record added successfully!" });
@@ -151,7 +174,15 @@ export default function AddRecord() {
                 })
             });
 
-            const createData = await createRes.json();
+            let createData = {};
+            const createContentType = createRes.headers.get("content-type");
+            if (createContentType && createContentType.includes("application/json")) {
+                createData = await createRes.json();
+            } else {
+                const text = await createRes.text();
+                throw new Error(`Expected JSON but got: ${text.substring(0, 200)}`);
+            }
+
             console.log("Create response:", { status: createRes.status, data: createData });
 
             if (createRes.ok) {
@@ -169,12 +200,20 @@ export default function AddRecord() {
                 }
             );
 
+                let addData = {};
+                const addContentType = addRes.headers.get("content-type");
+                if (addContentType && addContentType.includes("application/json")) {
+                    addData = await addRes.json();
+                } else {
+                    const text = await addRes.text();
+                    throw new Error(`Expected JSON but got: ${text.substring(0, 200)}`);
+                }
+
                 if (addRes.ok) {
                     setMessage({ type: "success", text: "Record created and added to folder!" });
                     setTimeout(() => navigate(-1), 1500);
                 } else {
-                    const addError = await addRes.json();
-                    setMessage({ type: "error", text: addError.message || "Failed to add record to folder" });
+                    setMessage({ type: "error", text: addData.message || "Failed to add record to folder" });
                 }
             } else {
                 setMessage({ type: "error", text: createData.message || "Failed to create record" });
@@ -227,32 +266,6 @@ export default function AddRecord() {
                     <h1 className="text-3xl font-bold text-slate-800">Add Record to Folder</h1>
                     <p className="text-slate-600 mt-2">Choose an existing record or create a new one</p>
                 </div>
-
-                {/* Mode Toggle */}
-                {/* <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200 mb-6">
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setMode("existing")}
-                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
-                                mode === "existing"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            }`}
-                        >
-                            Add Existing Record
-                        </button>
-                        <button
-                            onClick={() => setMode("new")}
-                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition ${
-                                mode === "new"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            }`}
-                        >
-                            Create New Record
-                        </button>
-                    </div>
-                </div> */}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
@@ -520,3 +533,4 @@ export default function AddRecord() {
         </div>
     );
 }
+

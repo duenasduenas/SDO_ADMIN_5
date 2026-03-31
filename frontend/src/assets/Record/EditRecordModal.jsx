@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { API_BASE_URL } from "../../../config.js";
 
 export default function EditRecordModal({
   record,
   isOpen,
   onClose,
   onSave,
-  apiBaseUrl,
   categories = [],
   folders = [] // Add this prop from parent
 }) {
@@ -46,7 +46,7 @@ export default function EditRecordModal({
       categoryId = editForm.category._id;
     } else if (editForm.category?.name) {
       try {
-        const res = await fetch(`${apiBaseUrl}/category/create`, {
+        const res = await fetch(`${API_BASE_URL}/category/create`, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export default function EditRecordModal({
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/record/edit-record/${record._id}`,
+        `${API_BASE_URL}/record/edit-record/${record._id}`,
         {
           method: "PUT",
           headers: { 

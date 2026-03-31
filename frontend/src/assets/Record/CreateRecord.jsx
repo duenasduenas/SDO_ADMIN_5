@@ -1,16 +1,14 @@
 import React, { useState } from "react";
 import { FileText, X, Loader } from "lucide-react";
+import { API_BASE_URL } from "../../../config.js";
 
-export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
+export function CreateRecord({ onSuccess, folderId, onClose, records, setRecords }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
-
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim() || !category.trim()) {
@@ -20,7 +18,6 @@ export function CreateRecord({ apiBaseUrl, onSuccess, folderId, onClose }) {
 
     setLoading(true);
     setError("");
-f
     try {
       // Step 1: Create the record
       const res = await fetch(`${API_BASE_URL}/record/create-record`, {
@@ -51,11 +48,17 @@ f
       }
 
       // Step 3: Notify parent and reset
-      onSuccess?.(newRecord);
-      setTitle("");
-      setCategory("");
-      setContent("");
-      setSuccess(true);
+  onSuccess?.(newRecord);
+  
+  // Auto-display new record by adding to records list
+  if (setRecords && newRecord) {
+    setRecords(prev => [newRecord, ...prev]);
+  }
+  
+  setTitle("");
+  setCategory("");
+  setContent("");
+  setSuccess(true);
 
       setTimeout(() => {
         setSuccess(false);

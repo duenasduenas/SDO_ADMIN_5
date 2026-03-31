@@ -1,4 +1,5 @@
 import Record from "../../models/Record.js";
+import Folder from "../../models/Folder.js";
 
 export async function createRecord(req, res) {
     const { title, content, image, category } = req.body;
@@ -197,11 +198,55 @@ export async function editRecord(req, res){
             return res.status(404).json({message: "Title, Content, Category is Missing"})
         }
 
-        const editRecord = await Record.findByIdAndUpdate(req.params.id, { title, content, image, category, folder }, { new: true })
-          .populate({ path: "folder", select: "name" })
-          .populate({ path: "category", select: "name" });
+        // Find current record
+        const currentRecord = await Record.findById(req.params.id);
+        if (!currentRecord) {
+            return res.status(404).json({ message: "Record not found" });
+        }
 
-        res.status(200).json({ message: "Editted", editRecord })       
+        const oldFolderId = currentRecord.folder?.[0]?.toString();
+        const newFolderId = folder;
+
+        // Handle folder change
+        if (oldFolderId !== newFolderId) {
+            // Remove from old folder
+            if (oldFolderId) {
+                const oldFolder = await Folder.findById(oldFolderId);
+                if (oldFolder) {
+                    oldFolder.records = oldFolder.records.filter(r => r.toString() !== req.params.id);
+                    await oldFolder.save();
+                }
+            }
+
+            // Add to new folder
+            if (newFolderId) {
+                const newFolder = await Folder.findById(newFolderId);
+                if (newFolder) {
+                    if (!newFolder.records.some(r => r.toString() === req.params.id)) {
+                        newFolder.records.push(req.params.id);
+                        await newFolder.save();
+                    }
+                }
+            }
+
+            // Update record's folder
+            currentRecord.folder = newFolderId ? [newFolderId] : [];
+        }
+
+        // Update other fields
+        currentRecord.title = title;
+        currentRecord.content = content;
+        currentRecord.image = image;
+        currentRecord.category = category;
+
+        await currentRecord.save();
+
+        // Populate and return
+        const updatedRecord = await Record.findById(req.params.id)
+            .populate({ path: "folder", select: "name" })
+            .populate({ path: "category", select: "name" });
+
+        res.status(200).json({ message: "Edited", editRecord: updatedRecord });
 
     } catch (error) {
         return res.status(500).json({ message: error.message })

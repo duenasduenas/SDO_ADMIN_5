@@ -6,7 +6,8 @@ import {
   getAllFolders,
   getFolderById,
   deleteFolder,
-  createRecordToFolder
+  createRecordToFolder,
+  removeRecordFromFolder
 } from "../cofig/controller/folderController.js";
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.put("/edit-folder/:id", editFolder);
 // ACTION ROUTES
 router.post("/add-record/:id", addRecordToFolder);
 router.post("/create-record/:id", createRecordToFolder);
+router.delete("/:id/records", removeRecordFromFolder);
 
 // GET ALL
 router.get("/", getAllFolders);

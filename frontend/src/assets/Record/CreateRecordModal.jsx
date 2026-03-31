@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader, FileText, FolderPlus, Tag, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { API_BASE_URL } from "../../../config.js";
 
 export default function CreateRecordModal({
   isOpen,
   onClose,
   onSuccess,
+  initialFolderId,
 }) {
   const [folders, setFolders] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -24,8 +26,6 @@ export default function CreateRecordModal({
 
   const [categoryMode, setCategoryMode] = useState("existing"); // "existing" or "new"
   const [folderMode, setFolderMode] = useState("existing"); // "existing" or "new"
-
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
 
   // Fetch folders and categories
   useEffect(() => {
@@ -67,7 +67,14 @@ export default function CreateRecordModal({
     fetchData();
   }, [isOpen, API_BASE_URL]);
 
-  // Reset form when modal closes
+// Reset form when modal closes
+  useEffect(() => {
+    if (isOpen && initialFolderId) {
+      setSelectedFolderId(initialFolderId);
+      setFolderMode("existing");
+    }
+  }, [isOpen, initialFolderId]);
+
   useEffect(() => {
     if (!isOpen) {
       setSelectedFolderId("");

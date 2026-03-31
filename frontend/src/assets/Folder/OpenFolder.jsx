@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Eye } from 'lucide-react';
+import { API_BASE_URL } from "../../../config.js";
 
 export default function OpenFolder({ folder, onFolderOpen, onRecordsLoaded, children }) {
   const [loading, setLoading] = useState(false);
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
 
   // Fetch folders and categories
 
@@ -26,6 +26,14 @@ export default function OpenFolder({ folder, onFolderOpen, onRecordsLoaded, chil
       });
       console.log("📡 Response status:", response.status);
       
+      if (!response.ok || response.headers.get("content-type")?.includes("text/html")) {
+        const text = await response.text();
+        console.error("❌ Got HTML instead of JSON — API_BASE_URL is likely wrong:", API_BASE_URL);
+        console.error("❌ Response body:", text.slice(0, 200));
+        onRecordsLoaded([]);
+        return;
+      }
+
       if (response.ok) {
         const text = await response.text();
         console.log("📝 Response text:", text);

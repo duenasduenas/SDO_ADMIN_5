@@ -12,6 +12,7 @@ import DeleteFolderButton from "../assets/Folder/DeleteFolderButton";
 import DeleteFolder from "../assets/Folder/DeleteFolder";
 import OpenFolder from "../assets/Folder/OpenFolder";
 import DarkModeModal from "./DarkModeModal";
+import { API_BASE_URL } from "../../config.js";
 
 export function Dashboard() {
   const [records, setRecords] = useState([]);
@@ -36,7 +37,8 @@ export function Dashboard() {
   const [showCreateRecord, setShowCreateRecord] = useState(false);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [showYourModal, setShowYourModal] = useState(false);
+const [showYourModal, setShowYourModal] = useState(false);
+  const [folderContextId, setFolderContextId] = useState(null);
   const [addRecordError, setAddRecordError] = useState("");
   const navigate = useNavigate();
   const [view, setView] = useState("all");
@@ -54,60 +56,71 @@ export function Dashboard() {
   const day = today.getDate();
   const week = Math.ceil(day / 7);
 
-  const API_BASE_URL = 'http://192.168.18.5:5000/api';
-
   useEffect(() => {
     fetchData();
   }, [currentPage, searchQuery, selectedCategory]);
 
   // Debounce search to avoid too many API calls
- const fetchData = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: recordsPerPage.toString(),
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
+        sortBy: "createdAt",
+        sortOrder: "desc",
       });
 
-      if (searchQuery) params.append('search', searchQuery);
-      if (selectedCategory) params.append('category', selectedCategory);
+      if (searchQuery) params.append("search", searchQuery);
+      if (selectedCategory) params.append("category", selectedCategory);
 
-      // Headers for ngrok
       const headers = {
-        'ngrok-skip-browser-warning': 'true',
-        'Content-Type': 'application/json'
+        "ngrok-skip-browser-warning": "true",
+        "Content-Type": "application/json",
       };
 
-      // Fetch records
-      const recordsRes = await fetch(`${API_BASE_URL}/record?${params}`, { 
-        headers,
-        method: 'GET'
-      });
-      
-      if (recordsRes.ok) {
-        const data = await recordsRes.json();
-        setRecords(data.records || []);
-        setPagination(data.pagination);
-        setTotalPages(data.pagination?.totalPages || 1);
-        setTotalRecords(data.pagination?.totalRecords || 0);
+      // Helper: fetch JSON safely, returns null on failure
+      const fetchJSON = async (url) => {
+        try {
+          const res = await fetch(url, { method: "GET", headers });
+          if (!res.ok) {
+            console.error(`Request failed [${res.status}]: ${url}`);
+            return null;
+          }
+          const contentType = res.headers.get("content-type") || "";
+          if (!contentType.includes("application/json")) {
+            const text = await res.text();
+            console.error(`Expected JSON but got HTML from ${url}:\n`, text.slice(0, 300));
+            return null;
+          }
+          return await res.json();
+        } catch (err) {
+          console.error(`Fetch error for ${url}:`, err);
+          return null;
+        }
+      };
+
+      const [recordsData, foldersData, categoriesData] = await Promise.all([
+        fetchJSON(`${API_BASE_URL}/record?${params}`),
+        fetchJSON(`${API_BASE_URL}/folder`),
+        fetchJSON(`${API_BASE_URL}/category`),
+      ]);
+
+      if (recordsData) {
+        setRecords(recordsData.records || []);
+        setPagination(recordsData.pagination);
+        setTotalPages(recordsData.pagination?.totalPages || 1);
+        setTotalRecords(recordsData.pagination?.totalRecords || 0);
       }
 
-      // Fetch folders
-      const foldersRes = await fetch(`${API_BASE_URL}/folder`, { headers });
-      if (foldersRes.ok) {
-        const foldersData = await foldersRes.json();
+      if (foldersData) {
         setFolders(Array.isArray(foldersData.folders) ? foldersData.folders : []);
       }
 
-      // Fetch categories
-      const categoriesRes = await fetch(`${API_BASE_URL}/category`, { headers });
-      if (categoriesRes.ok) {
-        const categoriesData = await categoriesRes.json();
+      if (categoriesData) {
         setCategories(categoriesData.categories || []);
       }
-      
+
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -141,6 +154,26 @@ export function Dashboard() {
     } catch (error) {
       console.error("Error deleting record:", error);
       alert("Error deleting record. Please try again.");
+    }
+  };
+
+  const removeRecordFromFolder = async (folderId, recordId) => {
+    if (!confirm("Remove this record from the folder?")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/folder/${folderId}/records`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId }),
+      });
+      if (res.ok) {
+        setFolderRecords(prev => prev.filter(r => r._id !== recordId));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Failed to remove: ${err.message || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("Error removing record from folder:", err);
+      alert("Error removing record. Please try again.");
     }
   };
 
@@ -742,22 +775,36 @@ export function Dashboard() {
                         Records in this folder
                         </h3>
 
-                        <Link
-                        to={`/add-record/${selectedFolder?._id}`}
-                        className="
-                            inline-flex items-center gap-1.5
-                            px-3 py-1.5 text-sm font-medium
-                            bg-blue-600 text-white
-                            rounded-lg shadow-sm
-                            hover:bg-blue-700
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
-                            transition
-                        "
-                        aria-label="Add record to this folder"
-                        >
-                        <Plus className="w-4 h-4" />
-                        Add Record
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/add-record/${selectedFolder?._id}`}
+                            className="
+                              inline-flex items-center gap-1.5
+                              px-3 py-1.5 text-sm font-medium
+                              bg-blue-600 text-white
+                              rounded-lg shadow-sm
+                              hover:bg-blue-700
+                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                              transition
+                            "
+                            aria-label="Add existing record to this folder"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add Record
+                          </Link>
+                          
+                          <button
+onClick={() => {
+  setFolderContextId(selectedFolder._id);
+  setShowCreateRecord(true);
+}}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded-lg shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 transition"
+                            aria-label="Create new record in this folder"
+                          >
+                            <Plus className="w-4 h-4" />
+                            New Record
+                          </button>
+                        </div>
                     </div>
                 </div>
 
@@ -783,14 +830,16 @@ export function Dashboard() {
                         <p className="text-xs text-gray-500">
                           {formatDate(record.createdAt)}
                         </p>
+                        <p>123</p>
                       </div>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteRecord(record._id);
+                        removeRecordFromFolder(selectedFolder._id, record._id);
                       }}
                       className="p-2 hover:bg-gray-200 rounded"
+                      title="Remove from folder"
                     >
                       <Trash2 className="w-4 h-4 text-gray-500" />
                     </button>
@@ -863,14 +912,18 @@ export function Dashboard() {
 
       {/* Create Record Modal */}
       {showCreateRecord && (
-        <CreateRecordModal
+<CreateRecordModal
           isOpen={showCreateRecord}
-          onClose={() => setShowCreateRecord(false)}
+          onClose={() => {
+            setFolderContextId(null);
+            setShowCreateRecord(false);
+          }}
           onSuccess={(newRecord) => {
             fetchData(); // Refresh to get updated pagination
             setShowCreateRecord(false);
           }}
           apiBaseUrl={API_BASE_URL}
+          initialFolderId={folderContextId}
         />
       )}
 

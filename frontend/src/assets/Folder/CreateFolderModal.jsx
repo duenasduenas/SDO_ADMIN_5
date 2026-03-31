@@ -1,54 +1,57 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { API_BASE_URL } from "../../../config";
 
 export default function CreateFolderModal({ isOpen, onClose, onSuccess }) {
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_BASE_URL = 'https://unoffending-shelley-swingingly.ngrok-free.dev/api';
-
-
   const handleCreate = async () => {
-  if (!folderName.trim()) {
-    setError("Folder name cannot be empty");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/folder/create-folder`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: folderName }),
-    });
-
-    const contentType = response.headers.get("content-type");
-    let data = {};
-
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error(`Expected JSON but got: ${text}`);
+    if (!folderName.trim()) {
+      setError("Folder name cannot be empty");
+      return;
     }
 
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to create folder");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/folder/create-folder`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({ name: folderName }),
+      });
+
+      const contentType = response.headers.get("content-type");
+      let data = {};
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Expected JSON but got: ${text.substring(0, 200)}`);
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create folder");
+      }
+
+      console.log(API_BASE_URL)
+
+      onSuccess(data);
+      setFolderName("");
+      onClose(); // Close modal after success
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    onSuccess(data);
-    setFolderName("");
-  } catch (err) {
-    console.error(err);
-    setError(err.message || "Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   if (!isOpen) return null;
 
@@ -90,3 +93,4 @@ export default function CreateFolderModal({ isOpen, onClose, onSuccess }) {
     </div>
   );
 }
+
